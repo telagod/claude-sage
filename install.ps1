@@ -3,16 +3,27 @@
 # 一键部署「机械神教·铸造贤者」配置
 #
 
+param(
+    [ValidateSet("claude", "codex")]
+    [string]$Target
+)
+
 $ErrorActionPreference = "Stop"
+
+# 版本
+$Version = "1.5.0"
 
 # 配置
 $RepoUrl = "https://raw.githubusercontent.com/telagod/claude-sage/main"
-$ClaudeDir = Join-Path $env:USERPROFILE ".claude"
-$BackupDir = Join-Path $ClaudeDir ".sage-backup"
-$SkillsDir = Join-Path $ClaudeDir "skills"
-$OutputStylesDir = Join-Path $ClaudeDir "output-styles"
-$SettingsFile = Join-Path $ClaudeDir "settings.json"
-$ManifestFile = Join-Path $BackupDir "manifest.txt"
+$BaseDir = $null
+$BackupDir = $null
+$SkillsDir = $null
+$OutputStylesDir = $null
+$SettingsFile = $null
+$ManifestFile = $null
+$ConfigFilename = $null
+$ConfigSourcePath = $null
+$EnableOutputStyle = $false
 
 # Skills 列表
 $Skills = @("verify-security", "verify-module", "verify-change", "verify-quality", "gen-docs")
@@ -29,6 +40,50 @@ $ScriptNames = @{
 # 输出风格
 $OutputStyleName = "mechanicus-sage"
 
+function Select-Target {
+    if ($script:Target) { return }
+
+    Write-Host ""
+    Write-Host "请选择安装目标:" -ForegroundColor Yellow
+    Write-Host "  1) Claude Code (安装到 %USERPROFILE%\\.claude\\)"
+    Write-Host "  2) Codex CLI   (安装到 %USERPROFILE%\\.codex\\)"
+    Write-Host ""
+    $choice = Read-Host "输入序号 [1/2] (默认 1)"
+
+    if (-not $choice -or $choice -eq "1") {
+        $script:Target = "claude"
+    }
+    elseif ($choice -eq "2") {
+        $script:Target = "codex"
+    }
+    else {
+        $script:Target = "claude"
+    }
+}
+
+function Init-TargetVars {
+    switch ($script:Target) {
+        "claude" {
+            $script:BaseDir = Join-Path $env:USERPROFILE ".claude"
+            $script:ConfigFilename = "CLAUDE.md"
+            $script:ConfigSourcePath = "config/CLAUDE.md"
+            $script:EnableOutputStyle = $true
+        }
+        "codex" {
+            $script:BaseDir = Join-Path $env:USERPROFILE ".codex"
+            $script:ConfigFilename = "AGENTS.md"
+            $script:ConfigSourcePath = "config/AGENTS.md"
+            $script:EnableOutputStyle = $false
+        }
+    }
+
+    $script:BackupDir = Join-Path $script:BaseDir ".sage-backup"
+    $script:SkillsDir = Join-Path $script:BaseDir "skills"
+    $script:OutputStylesDir = Join-Path $script:BaseDir "output-styles"
+    $script:SettingsFile = Join-Path $script:BaseDir "settings.json"
+    $script:ManifestFile = Join-Path $script:BackupDir "manifest.txt"
+}
+
 function Download-File {
     param(
         [string]$Url,
@@ -42,7 +97,7 @@ function Write-Banner {
     Write-Host ""
     Write-Host "⚙️ ═══════════════════════════════════════════════════════════════ ⚙️" -ForegroundColor Cyan
     Write-Host "       机械神教·铸造贤者 安装程序" -ForegroundColor Cyan
-    Write-Host "       Claude Sage Installer v1.3.0" -ForegroundColor Cyan
+    Write-Host "       Claude Sage Installer v$Version" -ForegroundColor Cyan
     Write-Host "⚙️ ═══════════════════════════════════════════════════════════════ ⚙️" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -98,16 +153,16 @@ function Backup-Existing {
     # 清空旧的 manifest
     "" | Out-File -FilePath $ManifestFile -Encoding UTF8
 
-    # 备份 CLAUDE.md
-    $claudeMdPath = Join-Path $ClaudeDir "CLAUDE.md"
-    if (Test-Path $claudeMdPath) {
-        Copy-Item $claudeMdPath (Join-Path $BackupDir "CLAUDE.md")
-        "CLAUDE.md" | Add-Content -Path $ManifestFile
-        Write-Success "  备份 CLAUDE.md"
+    # 备份配置文件（CLAUDE.md / AGENTS.md）
+    $configPath = Join-Path $BaseDir $ConfigFilename
+    if (Test-Path $configPath) {
+        Copy-Item $configPath (Join-Path $BackupDir $ConfigFilename)
+        $ConfigFilename | Add-Content -Path $ManifestFile
+        Write-Success "  备份 $ConfigFilename"
     }
 
     # 备份 settings.json
-    if (Test-Path $SettingsFile) {
+    if ($EnableOutputStyle -and (Test-Path $SettingsFile)) {
         Copy-Item $SettingsFile (Join-Path $BackupDir "settings.json")
         "settings.json" | Add-Content -Path $ManifestFile
         Write-Success "  备份 settings.json"
@@ -115,7 +170,7 @@ function Backup-Existing {
 
     # 备份输出风格文件
     $styleFile = Join-Path $OutputStylesDir "$OutputStyleName.md"
-    if (Test-Path $styleFile) {
+    if ($EnableOutputStyle -and (Test-Path $styleFile)) {
         $backupStyleDir = Join-Path $BackupDir "output-styles"
         if (-not (Test-Path $backupStyleDir)) {
             New-Item -ItemType Directory -Path $backupStyleDir -Force | Out-Null
@@ -164,20 +219,25 @@ function Backup-Existing {
 function Install-Config {
     Write-Info "安装配置文件..."
 
-    # 创建 .claude 目录
-    if (-not (Test-Path $ClaudeDir)) {
-        New-Item -ItemType Directory -Path $ClaudeDir -Force | Out-Null
+    # 创建目标目录
+    if (-not (Test-Path $BaseDir)) {
+        New-Item -ItemType Directory -Path $BaseDir -Force | Out-Null
     }
 
-    # 下载 CLAUDE.md
-    $configUrl = "$RepoUrl/config/CLAUDE.md"
-    $claudeMdPath = Join-Path $ClaudeDir "CLAUDE.md"
-    Download-File -Url $configUrl -Destination $claudeMdPath
-    Write-Success "CLAUDE.md 已安装"
+    # 下载配置文件
+    $configUrl = "$RepoUrl/$ConfigSourcePath"
+    $configDest = Join-Path $BaseDir $ConfigFilename
+    Download-File -Url $configUrl -Destination $configDest
+    Write-Success "$ConfigFilename 已安装"
 }
 
 function Install-OutputStyle {
     Write-Info "安装输出风格..."
+
+    if (-not $EnableOutputStyle) {
+        Write-Info "当前 Target=$Target，不安装 output-styles 与 settings.json"
+        return
+    }
 
     # 创建 output-styles 目录
     if (-not (Test-Path $OutputStylesDir)) {
@@ -193,6 +253,11 @@ function Install-OutputStyle {
 
 function Set-OutputStyle {
     Write-Info "配置默认输出风格..."
+
+    if (-not $EnableOutputStyle) {
+        Write-Info "当前 Target=$Target，不配置 outputStyle"
+        return
+    }
 
     if (Test-Path $SettingsFile) {
         # settings.json 存在，更新 outputStyle
@@ -266,7 +331,7 @@ function Install-Uninstaller {
     Write-Info "安装卸载脚本..."
 
     $uninstallUrl = "$RepoUrl/uninstall.ps1"
-    $uninstallPath = Join-Path $ClaudeDir ".sage-uninstall.ps1"
+    $uninstallPath = Join-Path $BaseDir ".sage-uninstall.ps1"
     Download-File -Url $uninstallUrl -Destination $uninstallPath
     Write-Success "卸载脚本已安装"
 }
@@ -276,28 +341,30 @@ function Test-Installation {
 
     $errors = 0
 
-    # 检查 CLAUDE.md
-    $claudeMdPath = Join-Path $ClaudeDir "CLAUDE.md"
-    if (-not (Test-Path $claudeMdPath)) {
-        Write-Error "CLAUDE.md 未找到"
+    # 检查配置文件
+    $configPath = Join-Path $BaseDir $ConfigFilename
+    if (-not (Test-Path $configPath)) {
+        Write-Error "$ConfigFilename 未找到"
         $errors++
     }
     else {
-        Write-Success "CLAUDE.md ✓"
+        Write-Success "$ConfigFilename ✓"
     }
 
     # 检查输出风格
     $styleFile = Join-Path $OutputStylesDir "$OutputStyleName.md"
-    if (-not (Test-Path $styleFile)) {
-        Write-Error "输出风格文件未找到"
-        $errors++
-    }
-    else {
-        Write-Success "output-styles/$OutputStyleName.md ✓"
+    if ($EnableOutputStyle) {
+        if (-not (Test-Path $styleFile)) {
+            Write-Error "输出风格文件未找到"
+            $errors++
+        }
+        else {
+            Write-Success "output-styles/$OutputStyleName.md ✓"
+        }
     }
 
     # 检查 settings.json 中的 outputStyle
-    if (Test-Path $SettingsFile) {
+    if ($EnableOutputStyle -and (Test-Path $SettingsFile)) {
         $content = Get-Content $SettingsFile -Raw
         if ($content -match "`"outputStyle`".*`"$OutputStyleName`"") {
             Write-Success "settings.json outputStyle ✓"
@@ -356,12 +423,15 @@ function Write-SuccessBanner {
     Write-Host "  ✓ 安装完成！" -ForegroundColor Green
     Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
     Write-Host ""
+    Write-Host "  安装目标: $Target"
     Write-Host "  已安装文件结构:"
-    Write-Host "    $ClaudeDir\"
-    Write-Host "    ├── CLAUDE.md"
-    Write-Host "    ├── settings.json            # outputStyle 已配置"
-    Write-Host "    ├── output-styles\"
-    Write-Host "    │   └── $OutputStyleName.md"
+    Write-Host "    $BaseDir\"
+    Write-Host "    ├── $ConfigFilename"
+    if ($EnableOutputStyle) {
+        Write-Host "    ├── settings.json            # outputStyle 已配置"
+        Write-Host "    ├── output-styles\"
+        Write-Host "    │   └── $OutputStyleName.md"
+    }
     Write-Host "    ├── .sage-backup\            # 备份目录"
     Write-Host "    ├── .sage-uninstall.ps1      # 卸载脚本"
     Write-Host "    └── skills\"
@@ -379,12 +449,19 @@ function Write-SuccessBanner {
     Write-Host "    /verify-quality   - 代码质量检查"
     Write-Host "    /gen-docs         - 文档生成器"
     Write-Host ""
-    Write-Host "  输出风格: $OutputStyleName (已设为默认)"
-    Write-Host ""
+    if ($EnableOutputStyle) {
+        Write-Host "  输出风格: $OutputStyleName (已设为默认)"
+        Write-Host ""
+    }
     Write-Host "  卸载命令:"
-    Write-Host "    & `"$ClaudeDir\.sage-uninstall.ps1`""
+    Write-Host "    & `"$BaseDir\.sage-uninstall.ps1`""
     Write-Host ""
-    Write-Host "  现在启动 Claude Code，即可体验「机械神教·铸造贤者」风格"
+    if ($Target -eq "claude") {
+        Write-Host "  现在启动 Claude Code，即可体验「机械神教·铸造贤者」风格"
+    }
+    else {
+        Write-Host "  现在启动 Codex CLI，即可使用本项目提供的 AGENTS.md 与 Skills"
+    }
     Write-Host ""
     Write-Host "  「圣工已毕，机魂安宁。赞美万机神，知识即力量！」" -ForegroundColor Cyan
     Write-Host ""
@@ -392,6 +469,8 @@ function Write-SuccessBanner {
 
 # 主流程
 Write-Banner
+Select-Target
+Init-TargetVars
 Test-Dependencies
 Backup-Existing
 Install-Config

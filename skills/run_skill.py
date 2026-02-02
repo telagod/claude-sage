@@ -17,11 +17,15 @@ Skills 运行入口
 import sys
 import subprocess
 from pathlib import Path
+import os
 
 
 def get_skills_dir() -> Path:
     """获取 skills 目录路径（跨平台）"""
-    return Path.home() / ".claude" / "skills"
+    override = os.environ.get("SAGE_SKILLS_DIR")
+    if override:
+        return Path(override).expanduser().resolve()
+    return Path(__file__).resolve().parent
 
 
 def get_script_path(skill_name: str) -> Path:

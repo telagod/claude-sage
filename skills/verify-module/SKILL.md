@@ -21,19 +21,16 @@ argument-hint: <模块路径>
 运行扫描脚本（跨平台）：
 
 ```bash
-# 获取脚本路径（自动适配系统）
-python -c "from pathlib import Path; print(Path.home() / '.claude/skills/verify-module/scripts/module_scanner.py')"
-
-# 运行扫描
-python "$(python -c "from pathlib import Path; print(Path.home() / '.claude/skills/verify-module/scripts/module_scanner.py')")" .
+# 在 verify-module 目录下运行（推荐）
+python scripts/module_scanner.py <模块路径>
 ```
 
-简化运行（在 skill 目录下）：
+通过统一入口运行（可在仓库内或安装后的 `skills/` 目录中使用）：
 
 ```bash
-python scripts/module_scanner.py <模块路径>
-python scripts/module_scanner.py <模块路径> -v      # 详细模式
-python scripts/module_scanner.py <模块路径> --json  # JSON 输出
+python ../run_skill.py verify-module <模块路径>
+python ../run_skill.py verify-module <模块路径> -v      # 详细模式
+python ../run_skill.py verify-module <模块路径> --json  # JSON 输出
 ```
 
 ## 校验标准

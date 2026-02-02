@@ -147,7 +147,8 @@ def generate_readme(info: ModuleInfo, existing_content: str = None) -> str:
     if info.description:
         lines.append(info.description)
     else:
-        lines.append("> TODO: 添加模块描述")
+        lines.append("> 请在此描述模块的核心功能、解决的问题和主要用途。")
+        lines.append("> 例如：本模块提供 X 功能，用于解决 Y 问题。")
     lines.append("")
 
     # 概述
@@ -159,7 +160,11 @@ def generate_readme(info: ModuleInfo, existing_content: str = None) -> str:
     # 特性
     lines.append("## 特性")
     lines.append("")
-    lines.append("- TODO: 列出主要特性")
+    lines.append("<!-- 列出模块的主要特性，每项应包含简短描述 -->")
+    lines.append("")
+    lines.append("- **特性1**: 请描述第一个主要特性")
+    lines.append("- **特性2**: 请描述第二个主要特性")
+    lines.append("- **特性3**: 请描述第三个主要特性")
     lines.append("")
 
     # 安装/依赖
@@ -184,16 +189,82 @@ def generate_readme(info: ModuleInfo, existing_content: str = None) -> str:
         lines.append("```bash")
         if info.language == 'Python':
             lines.append(f"python -m {info.name}")
+        elif info.language == 'Go':
+            lines.append(f"go run ./cmd/main.go")
+        elif info.language == 'Rust':
+            lines.append(f"cargo run")
+        elif info.language == 'TypeScript' or info.language == 'JavaScript':
+            lines.append(f"npm start")
         else:
-            lines.append(f"# TODO: 添加运行命令")
+            lines.append(f"# 请根据 {info.language} 项目结构添加运行命令")
         lines.append("```")
         lines.append("")
 
     lines.append("### 示例")
     lines.append("")
-    lines.append("```" + info.language.lower())
-    lines.append("# TODO: 添加使用示例")
-    lines.append("```")
+
+    # 根据语言生成示例模板
+    example_templates = {
+        'Python': '''from {module_name} import main
+
+# 初始化
+obj = main()
+
+# 执行操作
+result = obj.process()
+print(result)''',
+        'Go': '''package main
+
+import "{module_name}"
+
+func main() {{
+    // 初始化
+    obj := {module_name}.New()
+
+    // 执行操作
+    result := obj.Process()
+    println(result)
+}}''',
+        'Rust': '''use {module_name}::*;
+
+fn main() {{
+    // 初始化
+    let obj = Object::new();
+
+    // 执行操作
+    let result = obj.process();
+    println!("{{}}", result);
+}}''',
+        'TypeScript': '''import {{ main }} from "./{module_name}";
+
+// 初始化
+const obj = new main();
+
+// 执行操作
+const result = obj.process();
+console.log(result);''',
+        'JavaScript': '''const {{ main }} = require("./{module_name}");
+
+// 初始化
+const obj = new main();
+
+// 执行操作
+const result = obj.process();
+console.log(result);''',
+    }
+
+    lang = info.language
+    if lang in example_templates:
+        template = example_templates[lang]
+        example = template.format(module_name=info.name.lower())
+        lines.append("```" + lang.lower())
+        lines.append(example)
+        lines.append("```")
+    else:
+        lines.append("```" + info.language.lower())
+        lines.append("<!-- 请根据 " + info.language + " 语言特性提供使用示例 -->")
+        lines.append("<!-- 示例应包含：初始化、基本操作、结果处理 -->")
+        lines.append("```")
     lines.append("")
 
     # API 概览
@@ -207,7 +278,8 @@ def generate_readme(info: ModuleInfo, existing_content: str = None) -> str:
             lines.append("| 类名 | 描述 |")
             lines.append("|------|------|")
             for cls in info.classes[:10]:
-                lines.append(f"| `{cls['name']}` | {cls['doc'] or 'TODO'} |")
+                doc = cls['doc'] or "请补充此类的功能描述"
+                lines.append(f"| `{cls['name']}` | {doc} |")
             lines.append("")
 
         if info.functions:
@@ -216,7 +288,8 @@ def generate_readme(info: ModuleInfo, existing_content: str = None) -> str:
             lines.append("| 函数 | 描述 |")
             lines.append("|------|------|")
             for func in info.functions[:10]:
-                lines.append(f"| `{func['name']}()` | {func['doc'] or 'TODO'} |")
+                doc = func['doc'] or "请补充此函数的功能描述"
+                lines.append(f"| `{func['name']}()` | {doc} |")
             lines.append("")
 
     # 目录结构
@@ -267,7 +340,9 @@ def generate_design(info: ModuleInfo, existing_content: str = None) -> str:
     lines.append("")
     lines.append("```")
     lines.append("┌─────────────────────────────────────┐")
-    lines.append("│           TODO: 架构图              │")
+    lines.append("│  请在此绘制模块的整体架构图          │")
+    lines.append("│  包括主要组件、数据流、依赖关系      │")
+    lines.append("│  可使用 ASCII 图或 Mermaid 图表      │")
     lines.append("└─────────────────────────────────────┘")
     lines.append("```")
     lines.append("")
@@ -276,9 +351,13 @@ def generate_design(info: ModuleInfo, existing_content: str = None) -> str:
     lines.append("")
     if info.classes:
         for cls in info.classes[:5]:
-            lines.append(f"- **{cls['name']}**: {cls['doc'] or 'TODO: 描述职责'}")
+            doc = cls['doc'] or "请描述此组件的职责和功能"
+            lines.append(f"- **{cls['name']}**: {doc}")
     else:
-        lines.append("- TODO: 列出核心组件及其职责")
+        lines.append("<!-- 列出模块的核心组件及其职责 -->")
+        lines.append("- **组件1**: 请描述第一个核心组件的职责")
+        lines.append("- **组件2**: 请描述第二个核心组件的职责")
+        lines.append("- **组件3**: 请描述第三个核心组件的职责")
     lines.append("")
 
     # 设计决策
@@ -296,7 +375,7 @@ def generate_design(info: ModuleInfo, existing_content: str = None) -> str:
     lines.append(f"- **语言**: {info.language}")
     if info.dependencies:
         lines.append(f"- **主要依赖**: {', '.join(info.dependencies[:5])}")
-    lines.append("- **理由**: TODO")
+    lines.append("- **理由**: <!-- 请说明为什么选择这些技术栈，包括性能、可维护性、生态等考量 -->")
     lines.append("")
 
     # 权衡取舍
@@ -304,11 +383,14 @@ def generate_design(info: ModuleInfo, existing_content: str = None) -> str:
     lines.append("")
     lines.append("### 已知限制")
     lines.append("")
-    lines.append("- TODO: 列出已知限制")
+    lines.append("<!-- 列出模块的已知限制和约束条件 -->")
+    lines.append("- **限制1**: 请描述第一个已知限制及其原因")
+    lines.append("- **限制2**: 请描述第二个已知限制及其原因")
     lines.append("")
     lines.append("### 技术债务")
     lines.append("")
-    lines.append("- TODO: 记录有意引入的技术债务及原因")
+    lines.append("<!-- 记录有意引入的技术债务、临时方案及其原因 -->")
+    lines.append("- **债务1**: 描述 | 原因：性能优先 | 计划偿还时间：v2.0")
     lines.append("")
 
     # 安全考量
@@ -316,11 +398,15 @@ def generate_design(info: ModuleInfo, existing_content: str = None) -> str:
     lines.append("")
     lines.append("### 威胁模型")
     lines.append("")
-    lines.append("- TODO: 识别潜在威胁")
+    lines.append("<!-- 识别潜在的安全威胁，如认证、授权、数据泄露等 -->")
+    lines.append("- **威胁1**: 请描述潜在威胁及其影响")
+    lines.append("- **威胁2**: 请描述潜在威胁及其影响")
     lines.append("")
     lines.append("### 安全措施")
     lines.append("")
-    lines.append("- TODO: 列出已实施的安全措施")
+    lines.append("<!-- 列出已实施的安全措施，如输入验证、加密、访问控制等 -->")
+    lines.append("- **措施1**: 请描述已实施的安全措施")
+    lines.append("- **措施2**: 请描述已实施的安全措施")
     lines.append("")
 
     # 变更历史

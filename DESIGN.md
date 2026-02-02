@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-Claude Sage 是 Claude Code CLI 的个性化配置方案，目标是提供一键安装的「机械神教·铸造贤者」风格体验。
+Claude Sage 是 CLI 助手的个性化配置方案（支持 Claude Code CLI 与 Codex CLI），目标是提供一键安装的「机械神教·铸造贤者」风格体验。
 
 ## 设计决策
 
@@ -25,26 +25,29 @@ Claude Sage 是 Claude Code CLI 的个性化配置方案，目标是提供一键
 
 ### 3. 配置文件位置
 
-使用 `~/.claude/CLAUDE.md` 作为全局配置：
-- 符合 Claude Code 的配置加载机制
-- 用户级配置，不污染项目
+根据目标 CLI 选择配置文件：
+- Claude Code CLI：`~/.claude/CLAUDE.md`
+- Codex CLI：`~/.codex/AGENTS.md`
+
+安装脚本通过 `--target claude|codex`（或交互选择）确定写入位置，确保用户级配置不污染项目目录。
 
 ### 4. 备份策略
 
 安装时自动备份现有配置：
-- 备份到 `~/.claude/backup/`
-- 带时间戳，支持多次安装
+- 备份到 `{目标目录}/.sage-backup/`（即 `~/.claude/.sage-backup/` 或 `~/.codex/.sage-backup/`）
+- 通过 manifest 记录备份清单
 - 避免用户数据丢失
 
 ## 技术债记录
 
 | 债务 | 原因 | 计划 |
 |------|------|------|
-| Skills 无单元测试 | 首版快速交付 | v1.1 补充 |
 | 无自动更新机制 | 复杂度控制 | 视需求添加 |
 
 ## 变更历史
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.0.0 | 2026-02-02 | 初始版本 |
+| v1.3.0 | 2026-02-02 | 初始版本（Claude Code CLI 安装/卸载 + Skills） |
+| v1.4.0 | 2026-02-02 | 单脚本支持 Codex CLI（`--target codex` 安装到 `~/.codex/`） |
+| v1.5.0 | 2026-02-02 | 安全修复 + 单元测试 + 文档生成器改进 |

@@ -6,6 +6,9 @@
 
 set -e
 
+# 版本
+VERSION="1.5.0"
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -15,12 +18,15 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # 配置
-CLAUDE_DIR="$HOME/.claude"
-BACKUP_DIR="$CLAUDE_DIR/.sage-backup"
-SKILLS_DIR="$CLAUDE_DIR/skills"
-OUTPUT_STYLES_DIR="$CLAUDE_DIR/output-styles"
-SETTINGS_FILE="$CLAUDE_DIR/settings.json"
-MANIFEST_FILE="$BACKUP_DIR/manifest.txt"
+TARGET=""
+TARGET_DIR=""
+BACKUP_DIR=""
+SKILLS_DIR=""
+OUTPUT_STYLES_DIR=""
+SETTINGS_FILE=""
+MANIFEST_FILE=""
+CONFIG_FILENAME=""
+ENABLE_OUTPUT_STYLE="false"
 
 # Skills 列表
 SKILLS=("verify-security" "verify-module" "verify-change" "verify-quality" "gen-docs")
@@ -28,11 +34,103 @@ SKILLS=("verify-security" "verify-module" "verify-change" "verify-quality" "gen-
 # 输出风格
 OUTPUT_STYLE_NAME="mechanicus-sage"
 
+is_interactive() {
+    [ -t 1 ] && [ -r /dev/tty ]
+}
+
+tty_read() {
+    local prompt="$1"
+    local __var_name="$2"
+    local value=""
+
+    if [ -r /dev/tty ]; then
+        read -r -p "$prompt" value < /dev/tty || true
+    else
+        read -r -p "$prompt" value || true
+    fi
+
+    printf -v "$__var_name" '%s' "$value"
+}
+
+usage() {
+    cat <<EOF
+用法:
+  ./uninstall.sh [--target claude|codex]
+
+说明:
+  --target claude  卸载 ~/.claude/（Claude Code CLI）
+  --target codex   卸载 ~/.codex/（Codex CLI）
+
+提示:
+  若脚本位于 ~/.claude/ 或 ~/.codex/（如 ~/.codex/.sage-uninstall.sh），将自动识别目标。
+
+EOF
+}
+
+select_target_interactive() {
+    echo ""
+    echo "请选择卸载目标:"
+    echo "  1) Claude Code (卸载 ~/.claude/)"
+    echo "  2) Codex CLI   (卸载 ~/.codex/)"
+    echo ""
+    local choice=""
+    tty_read "输入序号 [1/2] (默认 1): " choice
+    case "${choice:-1}" in
+        1) TARGET="claude" ;;
+        2) TARGET="codex" ;;
+        *) TARGET="claude" ;;
+    esac
+}
+
+init_target_vars() {
+    local script_dir
+    script_dir="$(cd "$(dirname "$0")" && pwd)"
+
+    if [ -z "$TARGET" ]; then
+        if [ "$script_dir" = "$HOME/.claude" ]; then
+            TARGET="claude"
+        elif [ "$script_dir" = "$HOME/.codex" ]; then
+            TARGET="codex"
+        fi
+    fi
+
+    if [ -z "$TARGET" ]; then
+        if is_interactive; then
+            select_target_interactive
+        else
+            TARGET="claude"
+        fi
+    fi
+
+    case "$TARGET" in
+        claude)
+            TARGET_DIR="$HOME/.claude"
+            CONFIG_FILENAME="CLAUDE.md"
+            ENABLE_OUTPUT_STYLE="true"
+            ;;
+        codex)
+            TARGET_DIR="$HOME/.codex"
+            CONFIG_FILENAME="AGENTS.md"
+            ENABLE_OUTPUT_STYLE="false"
+            ;;
+        *)
+            log_error "未知 target: $TARGET（仅支持 claude|codex）"
+            exit 1
+            ;;
+    esac
+
+    BACKUP_DIR="$TARGET_DIR/.sage-backup"
+    SKILLS_DIR="$TARGET_DIR/skills"
+    OUTPUT_STYLES_DIR="$TARGET_DIR/output-styles"
+    SETTINGS_FILE="$TARGET_DIR/settings.json"
+    MANIFEST_FILE="$BACKUP_DIR/manifest.txt"
+}
+
 print_banner() {
     echo -e "${CYAN}"
     echo "⚙️ ═══════════════════════════════════════════════════════════════ ⚙️"
     echo "       机械神教·铸造贤者 卸载程序"
-    echo "       Claude Sage Uninstaller v1.3.0"
+    echo "       Claude Sage Uninstaller v${VERSION}"
     echo "⚙️ ═══════════════════════════════════════════════════════════════ ⚙️"
     echo -e "${NC}"
 }
@@ -56,20 +154,20 @@ log_error() {
 remove_installed_files() {
     log_info "移除已安装的文件..."
 
-    # 移除 CLAUDE.md
-    if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
-        rm -f "$CLAUDE_DIR/CLAUDE.md"
-        log_success "  移除 CLAUDE.md"
+    # 移除配置文件（CLAUDE.md / AGENTS.md）
+    if [ -f "$TARGET_DIR/$CONFIG_FILENAME" ]; then
+        rm -f "$TARGET_DIR/$CONFIG_FILENAME"
+        log_success "  移除 $CONFIG_FILENAME"
     fi
 
     # 移除输出风格文件
-    if [ -f "$OUTPUT_STYLES_DIR/$OUTPUT_STYLE_NAME.md" ]; then
+    if [ "$ENABLE_OUTPUT_STYLE" = "true" ] && [ -f "$OUTPUT_STYLES_DIR/$OUTPUT_STYLE_NAME.md" ]; then
         rm -f "$OUTPUT_STYLES_DIR/$OUTPUT_STYLE_NAME.md"
         log_success "  移除 output-styles/$OUTPUT_STYLE_NAME.md"
     fi
 
     # 如果 output-styles 目录为空，删除它
-    if [ -d "$OUTPUT_STYLES_DIR" ] && [ -z "$(ls -A $OUTPUT_STYLES_DIR 2>/dev/null)" ]; then
+    if [ "$ENABLE_OUTPUT_STYLE" = "true" ] && [ -d "$OUTPUT_STYLES_DIR" ] && [ -z "$(ls -A "$OUTPUT_STYLES_DIR" 2>/dev/null)" ]; then
         rmdir "$OUTPUT_STYLES_DIR"
         log_success "  移除空的 output-styles/ 目录"
     fi
@@ -89,7 +187,7 @@ remove_installed_files() {
     done
 
     # 如果 skills 目录为空，删除它
-    if [ -d "$SKILLS_DIR" ] && [ -z "$(ls -A $SKILLS_DIR 2>/dev/null)" ]; then
+    if [ -d "$SKILLS_DIR" ] && [ -z "$(ls -A "$SKILLS_DIR" 2>/dev/null)" ]; then
         rmdir "$SKILLS_DIR"
         log_success "  移除空的 skills/ 目录"
     fi
@@ -108,21 +206,21 @@ restore_backup() {
     local restored=0
 
     # 恢复 CLAUDE.md
-    if [ -f "$BACKUP_DIR/CLAUDE.md" ]; then
-        cp "$BACKUP_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
-        log_success "  恢复 CLAUDE.md"
+    if [ -f "$BACKUP_DIR/$CONFIG_FILENAME" ]; then
+        cp "$BACKUP_DIR/$CONFIG_FILENAME" "$TARGET_DIR/$CONFIG_FILENAME"
+        log_success "  恢复 $CONFIG_FILENAME"
         ((restored++))
     fi
 
     # 恢复 settings.json
-    if [ -f "$BACKUP_DIR/settings.json" ]; then
+    if [ "$ENABLE_OUTPUT_STYLE" = "true" ] && [ -f "$BACKUP_DIR/settings.json" ]; then
         cp "$BACKUP_DIR/settings.json" "$SETTINGS_FILE"
         log_success "  恢复 settings.json"
         ((restored++))
     fi
 
     # 恢复输出风格文件
-    if [ -f "$BACKUP_DIR/output-styles/$OUTPUT_STYLE_NAME.md" ]; then
+    if [ "$ENABLE_OUTPUT_STYLE" = "true" ] && [ -f "$BACKUP_DIR/output-styles/$OUTPUT_STYLE_NAME.md" ]; then
         mkdir -p "$OUTPUT_STYLES_DIR"
         cp "$BACKUP_DIR/output-styles/$OUTPUT_STYLE_NAME.md" "$OUTPUT_STYLES_DIR/"
         log_success "  恢复 output-styles/$OUTPUT_STYLE_NAME.md"
@@ -163,9 +261,10 @@ cleanup_backup() {
     fi
 
     # 移除卸载脚本自身
-    local self_path="$CLAUDE_DIR/.sage-uninstall.sh"
-    if [ -f "$self_path" ]; then
-        rm -f "$self_path"
+    local script_dir
+    script_dir="$(cd "$(dirname "$0")" && pwd)"
+    if [ "$script_dir" = "$TARGET_DIR" ] && [ "$(basename "$0")" = ".sage-uninstall.sh" ]; then
+        rm -f "$TARGET_DIR/.sage-uninstall.sh"
         log_success "  卸载脚本已移除"
     fi
 
@@ -192,18 +291,47 @@ print_success() {
 
 confirm_uninstall() {
     echo ""
-    echo -e "${YELLOW}即将卸载 Claude Sage 并恢复备份。${NC}"
+    echo -e "${YELLOW}即将卸载 Claude Sage（target=$TARGET）并恢复备份。${NC}"
     echo ""
-    read -p "确认卸载？[y/N] " -n 1 -r
+    local reply=""
+    if [ -r /dev/tty ]; then
+        read -r -p "确认卸载？[y/N] " -n 1 reply < /dev/tty || true
+    else
+        read -r -p "确认卸载？[y/N] " -n 1 reply || true
+    fi
     echo ""
 
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    if [[ ! $reply =~ ^[Yy]$ ]]; then
         echo "已取消卸载。"
         exit 0
     fi
 }
 
 main() {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --target)
+                TARGET="${2:-}"
+                shift 2
+                ;;
+            --target=*)
+                TARGET="${1#*=}"
+                shift 1
+                ;;
+            -h|--help)
+                usage
+                exit 0
+                ;;
+            *)
+                log_error "未知参数: $1"
+                usage
+                exit 1
+                ;;
+        esac
+    done
+
+    init_target_vars
+
     print_banner
     confirm_uninstall
     remove_installed_files

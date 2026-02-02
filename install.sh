@@ -6,6 +6,9 @@
 
 set -e
 
+# 版本
+VERSION="1.5.0"
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -16,12 +19,16 @@ NC='\033[0m'
 
 # 配置
 REPO_URL="https://raw.githubusercontent.com/telagod/claude-sage/main"
-CLAUDE_DIR="$HOME/.claude"
-BACKUP_DIR="$CLAUDE_DIR/.sage-backup"
-SKILLS_DIR="$CLAUDE_DIR/skills"
-OUTPUT_STYLES_DIR="$CLAUDE_DIR/output-styles"
-SETTINGS_FILE="$CLAUDE_DIR/settings.json"
-MANIFEST_FILE="$BACKUP_DIR/manifest.txt"
+TARGET=""
+TARGET_DIR=""
+BACKUP_DIR=""
+SKILLS_DIR=""
+OUTPUT_STYLES_DIR=""
+SETTINGS_FILE=""
+MANIFEST_FILE=""
+CONFIG_FILENAME=""
+CONFIG_SOURCE_PATH=""
+ENABLE_OUTPUT_STYLE="false"
 
 # Skills 列表
 SKILLS=("verify-security" "verify-module" "verify-change" "verify-quality" "gen-docs")
@@ -38,11 +45,83 @@ declare -A SCRIPT_NAMES=(
 # 输出风格
 OUTPUT_STYLE_NAME="mechanicus-sage"
 
+is_interactive() {
+    [ -t 1 ] && [ -r /dev/tty ]
+}
+
+tty_read() {
+    local prompt="$1"
+    local __var_name="$2"
+    local value=""
+
+    if [ -r /dev/tty ]; then
+        read -r -p "$prompt" value < /dev/tty || true
+    else
+        read -r -p "$prompt" value || true
+    fi
+
+    printf -v "$__var_name" '%s' "$value"
+}
+
+usage() {
+    cat <<EOF
+用法:
+  ./install.sh [--target claude|codex]
+
+说明:
+  --target claude  安装到 ~/.claude/（Claude Code CLI）
+  --target codex   安装到 ~/.codex/（Codex CLI，安装 AGENTS.md + skills）
+
+EOF
+}
+
+select_target_interactive() {
+    echo ""
+    echo "请选择安装目标:"
+    echo "  1) Claude Code (安装到 ~/.claude/)"
+    echo "  2) Codex CLI   (安装到 ~/.codex/)"
+    echo ""
+    local choice=""
+    tty_read "输入序号 [1/2] (默认 1): " choice
+    case "${choice:-1}" in
+        1) TARGET="claude" ;;
+        2) TARGET="codex" ;;
+        *) TARGET="claude" ;;
+    esac
+}
+
+init_target_vars() {
+    case "$TARGET" in
+        claude)
+            TARGET_DIR="$HOME/.claude"
+            CONFIG_FILENAME="CLAUDE.md"
+            CONFIG_SOURCE_PATH="config/CLAUDE.md"
+            ENABLE_OUTPUT_STYLE="true"
+            ;;
+        codex)
+            TARGET_DIR="$HOME/.codex"
+            CONFIG_FILENAME="AGENTS.md"
+            CONFIG_SOURCE_PATH="config/AGENTS.md"
+            ENABLE_OUTPUT_STYLE="false"
+            ;;
+        *)
+            log_error "未知 target: $TARGET（仅支持 claude|codex）"
+            exit 1
+            ;;
+    esac
+
+    BACKUP_DIR="$TARGET_DIR/.sage-backup"
+    SKILLS_DIR="$TARGET_DIR/skills"
+    OUTPUT_STYLES_DIR="$TARGET_DIR/output-styles"
+    SETTINGS_FILE="$TARGET_DIR/settings.json"
+    MANIFEST_FILE="$BACKUP_DIR/manifest.txt"
+}
+
 print_banner() {
     echo -e "${CYAN}"
     echo "⚙️ ═══════════════════════════════════════════════════════════════ ⚙️"
     echo "       机械神教·铸造贤者 安装程序"
-    echo "       Claude Sage Installer v1.3.0"
+    echo "       Claude Sage Installer v${VERSION}"
     echo "⚙️ ═══════════════════════════════════════════════════════════════ ⚙️"
     echo -e "${NC}"
 }
@@ -100,22 +179,22 @@ backup_existing() {
     # 清空旧的 manifest
     > "$MANIFEST_FILE"
 
-    # 备份 CLAUDE.md
-    if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
-        cp "$CLAUDE_DIR/CLAUDE.md" "$BACKUP_DIR/CLAUDE.md"
-        echo "CLAUDE.md" >> "$MANIFEST_FILE"
-        log_success "  备份 CLAUDE.md"
+    # 备份配置文件（CLAUDE.md / AGENTS.md）
+    if [ -f "$TARGET_DIR/$CONFIG_FILENAME" ]; then
+        cp "$TARGET_DIR/$CONFIG_FILENAME" "$BACKUP_DIR/$CONFIG_FILENAME"
+        echo "$CONFIG_FILENAME" >> "$MANIFEST_FILE"
+        log_success "  备份 $CONFIG_FILENAME"
     fi
 
     # 备份 settings.json（记录原始 outputStyle）
-    if [ -f "$SETTINGS_FILE" ]; then
+    if [ "$ENABLE_OUTPUT_STYLE" = "true" ] && [ -f "$SETTINGS_FILE" ]; then
         cp "$SETTINGS_FILE" "$BACKUP_DIR/settings.json"
         echo "settings.json" >> "$MANIFEST_FILE"
         log_success "  备份 settings.json"
     fi
 
     # 备份 output-styles 中的同名文件
-    if [ -f "$OUTPUT_STYLES_DIR/$OUTPUT_STYLE_NAME.md" ]; then
+    if [ "$ENABLE_OUTPUT_STYLE" = "true" ] && [ -f "$OUTPUT_STYLES_DIR/$OUTPUT_STYLE_NAME.md" ]; then
         mkdir -p "$BACKUP_DIR/output-styles"
         cp "$OUTPUT_STYLES_DIR/$OUTPUT_STYLE_NAME.md" "$BACKUP_DIR/output-styles/"
         echo "output-styles/$OUTPUT_STYLE_NAME.md" >> "$MANIFEST_FILE"
@@ -155,16 +234,21 @@ backup_existing() {
 install_config() {
     log_info "安装配置文件..."
 
-    # 创建 .claude 目录
-    mkdir -p "$CLAUDE_DIR"
+    # 创建目标目录
+    mkdir -p "$TARGET_DIR"
 
-    # 下载 CLAUDE.md 到 ~/.claude/
-    download_file "$REPO_URL/config/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
-    log_success "CLAUDE.md 已安装"
+    # 下载配置文件
+    download_file "$REPO_URL/$CONFIG_SOURCE_PATH" "$TARGET_DIR/$CONFIG_FILENAME"
+    log_success "$CONFIG_FILENAME 已安装"
 }
 
 install_output_style() {
     log_info "安装输出风格..."
+
+    if [ "$ENABLE_OUTPUT_STYLE" != "true" ]; then
+        log_info "当前 target=$TARGET，不安装 output-styles 与 settings.json"
+        return 0
+    fi
 
     # 创建 output-styles 目录
     mkdir -p "$OUTPUT_STYLES_DIR"
@@ -177,25 +261,36 @@ install_output_style() {
 configure_output_style() {
     log_info "配置默认输出风格..."
 
+    if [ "$ENABLE_OUTPUT_STYLE" != "true" ]; then
+        log_info "当前 target=$TARGET，不配置 outputStyle"
+        return 0
+    fi
+
     if [ -f "$SETTINGS_FILE" ]; then
-        # settings.json 存在，更新 outputStyle
+        # settings.json 存在，更新 outputStyle（使用环境变量避免注入）
         if command -v python3 &> /dev/null; then
-            python3 -c "
+            SETTINGS_FILE="$SETTINGS_FILE" OUTPUT_STYLE="$OUTPUT_STYLE_NAME" python3 -c "
 import json
-with open('$SETTINGS_FILE', 'r') as f:
+import os
+settings_file = os.environ['SETTINGS_FILE']
+output_style = os.environ['OUTPUT_STYLE']
+with open(settings_file, 'r') as f:
     settings = json.load(f)
-settings['outputStyle'] = '$OUTPUT_STYLE_NAME'
-with open('$SETTINGS_FILE', 'w') as f:
+settings['outputStyle'] = output_style
+with open(settings_file, 'w') as f:
     json.dump(settings, f, indent=2, ensure_ascii=False)
 "
             log_success "已设置 outputStyle 为 $OUTPUT_STYLE_NAME"
         elif command -v python &> /dev/null; then
-            python -c "
+            SETTINGS_FILE="$SETTINGS_FILE" OUTPUT_STYLE="$OUTPUT_STYLE_NAME" python -c "
 import json
-with open('$SETTINGS_FILE', 'r') as f:
+import os
+settings_file = os.environ['SETTINGS_FILE']
+output_style = os.environ['OUTPUT_STYLE']
+with open(settings_file, 'r') as f:
     settings = json.load(f)
-settings['outputStyle'] = '$OUTPUT_STYLE_NAME'
-with open('$SETTINGS_FILE', 'w') as f:
+settings['outputStyle'] = output_style
+with open(settings_file, 'w') as f:
     json.dump(settings, f, indent=2, ensure_ascii=False)
 "
             log_success "已设置 outputStyle 为 $OUTPUT_STYLE_NAME"
@@ -247,8 +342,8 @@ install_skills() {
 install_uninstaller() {
     log_info "安装卸载脚本..."
 
-    download_file "$REPO_URL/uninstall.sh" "$CLAUDE_DIR/.sage-uninstall.sh"
-    chmod +x "$CLAUDE_DIR/.sage-uninstall.sh"
+    download_file "$REPO_URL/uninstall.sh" "$TARGET_DIR/.sage-uninstall.sh"
+    chmod +x "$TARGET_DIR/.sage-uninstall.sh"
     log_success "卸载脚本已安装"
 }
 
@@ -257,28 +352,32 @@ verify_installation() {
 
     local errors=0
 
-    # 检查 CLAUDE.md
-    if [ ! -f "$CLAUDE_DIR/CLAUDE.md" ]; then
-        log_error "CLAUDE.md 未找到"
+    # 检查配置文件
+    if [ ! -f "$TARGET_DIR/$CONFIG_FILENAME" ]; then
+        log_error "$CONFIG_FILENAME 未找到"
         ((errors++))
     else
-        log_success "CLAUDE.md ✓"
+        log_success "$CONFIG_FILENAME ✓"
     fi
 
     # 检查输出风格
-    if [ ! -f "$OUTPUT_STYLES_DIR/$OUTPUT_STYLE_NAME.md" ]; then
-        log_error "输出风格文件未找到"
-        ((errors++))
-    else
-        log_success "output-styles/$OUTPUT_STYLE_NAME.md ✓"
+    if [ "$ENABLE_OUTPUT_STYLE" = "true" ]; then
+        if [ ! -f "$OUTPUT_STYLES_DIR/$OUTPUT_STYLE_NAME.md" ]; then
+            log_error "输出风格文件未找到"
+            ((errors++))
+        else
+            log_success "output-styles/$OUTPUT_STYLE_NAME.md ✓"
+        fi
     fi
 
     # 检查 settings.json 中的 outputStyle
-    if [ -f "$SETTINGS_FILE" ]; then
-        if grep -q "\"outputStyle\".*\"$OUTPUT_STYLE_NAME\"" "$SETTINGS_FILE"; then
-            log_success "settings.json outputStyle ✓"
-        else
-            log_warn "settings.json outputStyle 未正确配置"
+    if [ "$ENABLE_OUTPUT_STYLE" = "true" ]; then
+        if [ -f "$SETTINGS_FILE" ]; then
+            if grep -q "\"outputStyle\".*\"$OUTPUT_STYLE_NAME\"" "$SETTINGS_FILE"; then
+                log_success "settings.json outputStyle ✓"
+            else
+                log_warn "settings.json outputStyle 未正确配置"
+            fi
         fi
     fi
 
@@ -322,12 +421,15 @@ print_success() {
     echo -e "${GREEN}  ✓ 安装完成！${NC}"
     echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
+    echo "  安装目标: $TARGET"
     echo "  已安装文件结构:"
-    echo "    $CLAUDE_DIR/"
-    echo "    ├── CLAUDE.md"
-    echo "    ├── settings.json            # outputStyle 已配置"
-    echo "    ├── output-styles/"
-    echo "    │   └── $OUTPUT_STYLE_NAME.md"
+    echo "    $TARGET_DIR/"
+    echo "    ├── $CONFIG_FILENAME"
+    if [ "$ENABLE_OUTPUT_STYLE" = "true" ]; then
+        echo "    ├── settings.json            # outputStyle 已配置"
+        echo "    ├── output-styles/"
+        echo "    │   └── $OUTPUT_STYLE_NAME.md"
+    fi
     echo "    ├── .sage-backup/            # 备份目录"
     echo "    ├── .sage-uninstall.sh       # 卸载脚本"
     echo "    └── skills/"
@@ -345,19 +447,57 @@ print_success() {
     echo "    /verify-quality   - 代码质量检查"
     echo "    /gen-docs         - 文档生成器"
     echo ""
-    echo "  输出风格: $OUTPUT_STYLE_NAME (已设为默认)"
-    echo ""
+    if [ "$ENABLE_OUTPUT_STYLE" = "true" ]; then
+        echo "  输出风格: $OUTPUT_STYLE_NAME (已设为默认)"
+        echo ""
+    fi
     echo "  卸载命令:"
-    echo "    ~/.claude/.sage-uninstall.sh"
+    echo "    $TARGET_DIR/.sage-uninstall.sh"
     echo ""
-    echo "  现在启动 Claude Code，即可体验「机械神教·铸造贤者」风格"
+    if [ "$TARGET" = "claude" ]; then
+        echo "  现在启动 Claude Code，即可体验「机械神教·铸造贤者」风格"
+    else
+        echo "  现在启动 Codex CLI，即可使用本项目提供的 AGENTS.md 与 Skills"
+    fi
     echo ""
     echo -e "${CYAN}  「圣工已毕，机魂安宁。赞美万机神，知识即力量！」${NC}"
     echo ""
 }
 
 main() {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --target)
+                TARGET="${2:-}"
+                shift 2
+                ;;
+            --target=*)
+                TARGET="${1#*=}"
+                shift 1
+                ;;
+            -h|--help)
+                usage
+                exit 0
+                ;;
+            *)
+                log_error "未知参数: $1"
+                usage
+                exit 1
+                ;;
+        esac
+    done
+
     print_banner
+
+    if [ -z "$TARGET" ]; then
+        if is_interactive; then
+            select_target_interactive
+        else
+            TARGET="claude"
+        fi
+    fi
+
+    init_target_vars
     check_dependencies
     backup_existing
     install_config
