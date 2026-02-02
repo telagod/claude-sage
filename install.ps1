@@ -40,6 +40,49 @@ $ScriptNames = @{
 # 输出风格
 $OutputStyleName = "mechanicus-sage"
 
+function Get-UserProfileDir {
+    $home = $env:USERPROFILE
+    if ([string]::IsNullOrWhiteSpace($home)) {
+        $home = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
+    }
+    if ([string]::IsNullOrWhiteSpace($home)) {
+        $home = $HOME
+    }
+    if ([string]::IsNullOrWhiteSpace($home)) {
+        throw "无法确定用户目录（USERPROFILE/UserProfile/HOME 均为空）"
+    }
+    return $home
+}
+
+function Test-PathSafe {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
+    return Test-Path -LiteralPath $Path
+}
+
+function Ensure-Directory {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        throw "路径为空，无法创建目录"
+    }
+    if (-not (Test-Path -LiteralPath $Path)) {
+        New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    }
+}
+
+function Assert-Initialized {
+    $missing = @()
+    if ([string]::IsNullOrWhiteSpace($Target)) { $missing += "Target" }
+    if ([string]::IsNullOrWhiteSpace($BaseDir)) { $missing += "BaseDir" }
+    if ([string]::IsNullOrWhiteSpace($BackupDir)) { $missing += "BackupDir" }
+    if ([string]::IsNullOrWhiteSpace($SkillsDir)) { $missing += "SkillsDir" }
+    if ([string]::IsNullOrWhiteSpace($ConfigFilename)) { $missing += "ConfigFilename" }
+    if ([string]::IsNullOrWhiteSpace($ConfigSourcePath)) { $missing += "ConfigSourcePath" }
+    if ($missing.Count -gt 0) {
+        throw ("初始化失败：{0}" -f ($missing -join ", "))
+    }
+}
+
 function Select-Target {
     if ($script:Target) { return }
 
@@ -62,15 +105,16 @@ function Select-Target {
 }
 
 function Init-TargetVars {
+    $userHome = Get-UserProfileDir
     switch ($script:Target) {
         "claude" {
-            $script:BaseDir = Join-Path $env:USERPROFILE ".claude"
+            $script:BaseDir = Join-Path $userHome ".claude"
             $script:ConfigFilename = "CLAUDE.md"
             $script:ConfigSourcePath = "config/CLAUDE.md"
             $script:EnableOutputStyle = $true
         }
         "codex" {
-            $script:BaseDir = Join-Path $env:USERPROFILE ".codex"
+            $script:BaseDir = Join-Path $userHome ".codex"
             $script:ConfigFilename = "AGENTS.md"
             $script:ConfigSourcePath = "config/AGENTS.md"
             $script:EnableOutputStyle = $false
@@ -146,23 +190,21 @@ function Backup-Existing {
     Write-Info "备份现有配置..."
 
     # 创建备份目录
-    if (-not (Test-Path $BackupDir)) {
-        New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
-    }
+    Ensure-Directory $BackupDir
 
     # 清空旧的 manifest
     "" | Out-File -FilePath $ManifestFile -Encoding UTF8
 
     # 备份配置文件（CLAUDE.md / AGENTS.md）
     $configPath = Join-Path $BaseDir $ConfigFilename
-    if (Test-Path $configPath) {
+    if (Test-PathSafe $configPath) {
         Copy-Item $configPath (Join-Path $BackupDir $ConfigFilename)
         $ConfigFilename | Add-Content -Path $ManifestFile
         Write-Success "  备份 $ConfigFilename"
     }
 
     # 备份 settings.json
-    if ($EnableOutputStyle -and (Test-Path $SettingsFile)) {
+    if ($EnableOutputStyle -and (Test-PathSafe $SettingsFile)) {
         Copy-Item $SettingsFile (Join-Path $BackupDir "settings.json")
         "settings.json" | Add-Content -Path $ManifestFile
         Write-Success "  备份 settings.json"
@@ -170,20 +212,18 @@ function Backup-Existing {
 
     # 备份输出风格文件
     $styleFile = Join-Path $OutputStylesDir "$OutputStyleName.md"
-    if ($EnableOutputStyle -and (Test-Path $styleFile)) {
+    if ($EnableOutputStyle -and (Test-PathSafe $styleFile)) {
         $backupStyleDir = Join-Path $BackupDir "output-styles"
-        if (-not (Test-Path $backupStyleDir)) {
-            New-Item -ItemType Directory -Path $backupStyleDir -Force | Out-Null
-        }
+        Ensure-Directory $backupStyleDir
         Copy-Item $styleFile $backupStyleDir
         "output-styles/$OutputStyleName.md" | Add-Content -Path $ManifestFile
         Write-Success "  备份 output-styles/$OutputStyleName.md"
     }
 
     # 备份 skills 目录中受影响的文件
-    if (Test-Path $SkillsDir) {
+    if (Test-PathSafe $SkillsDir) {
         # 备份 run_skill.py
-        if (Test-Path (Join-Path $SkillsDir "run_skill.py")) {
+        if (Test-PathSafe (Join-Path $SkillsDir "run_skill.py")) {
             Copy-Item (Join-Path $SkillsDir "run_skill.py") (Join-Path $BackupDir "run_skill.py")
             "skills/run_skill.py" | Add-Content -Path $ManifestFile
             Write-Success "  备份 skills\run_skill.py"
@@ -192,11 +232,9 @@ function Backup-Existing {
         # 备份每个 skill 目录
         foreach ($skill in $Skills) {
             $skillPath = Join-Path $SkillsDir $skill
-            if (Test-Path $skillPath) {
+            if (Test-PathSafe $skillPath) {
                 $backupSkillDir = Join-Path $BackupDir "skills/$skill"
-                if (-not (Test-Path $backupSkillDir)) {
-                    New-Item -ItemType Directory -Path $backupSkillDir -Force | Out-Null
-                }
+                Ensure-Directory $backupSkillDir
                 Copy-Item -Recurse "$skillPath/*" $backupSkillDir -Force -ErrorAction SilentlyContinue
                 "skills/$skill" | Add-Content -Path $ManifestFile
                 Write-Success "  备份 skills/$skill/"
@@ -220,9 +258,7 @@ function Install-Config {
     Write-Info "安装配置文件..."
 
     # 创建目标目录
-    if (-not (Test-Path $BaseDir)) {
-        New-Item -ItemType Directory -Path $BaseDir -Force | Out-Null
-    }
+    Ensure-Directory $BaseDir
 
     # 下载配置文件
     $configUrl = "$RepoUrl/$ConfigSourcePath"
@@ -240,9 +276,7 @@ function Install-OutputStyle {
     }
 
     # 创建 output-styles 目录
-    if (-not (Test-Path $OutputStylesDir)) {
-        New-Item -ItemType Directory -Path $OutputStylesDir -Force | Out-Null
-    }
+    Ensure-Directory $OutputStylesDir
 
     # 下载输出风格文件
     $styleUrl = "$RepoUrl/output-styles/$OutputStyleName.md"
@@ -259,7 +293,7 @@ function Set-OutputStyle {
         return
     }
 
-    if (Test-Path $SettingsFile) {
+    if (Test-PathSafe $SettingsFile) {
         # settings.json 存在，更新 outputStyle
         try {
             $settings = Get-Content $SettingsFile -Raw | ConvertFrom-Json
@@ -285,9 +319,7 @@ function Install-Skills {
     Write-Info "安装 skills..."
 
     # 创建 skills 目录
-    if (-not (Test-Path $SkillsDir)) {
-        New-Item -ItemType Directory -Path $SkillsDir -Force | Out-Null
-    }
+    Ensure-Directory $SkillsDir
 
     # 下载 run_skill.py 入口
     $runSkillUrl = "$RepoUrl/skills/run_skill.py"
@@ -303,12 +335,8 @@ function Install-Skills {
         $skillDir = Join-Path $SkillsDir $skill
         $scriptsDir = Join-Path $skillDir "scripts"
 
-        if (-not (Test-Path $skillDir)) {
-            New-Item -ItemType Directory -Path $skillDir -Force | Out-Null
-        }
-        if (-not (Test-Path $scriptsDir)) {
-            New-Item -ItemType Directory -Path $scriptsDir -Force | Out-Null
-        }
+        Ensure-Directory $skillDir
+        Ensure-Directory $scriptsDir
 
         # 下载 SKILL.md
         $skillMdUrl = "$RepoUrl/skills/$skill/SKILL.md"
@@ -343,7 +371,7 @@ function Test-Installation {
 
     # 检查配置文件
     $configPath = Join-Path $BaseDir $ConfigFilename
-    if (-not (Test-Path $configPath)) {
+    if (-not (Test-PathSafe $configPath)) {
         Write-Error "$ConfigFilename 未找到"
         $errors++
     }
@@ -354,7 +382,7 @@ function Test-Installation {
     # 检查输出风格
     $styleFile = Join-Path $OutputStylesDir "$OutputStyleName.md"
     if ($EnableOutputStyle) {
-        if (-not (Test-Path $styleFile)) {
+        if (-not (Test-PathSafe $styleFile)) {
             Write-Error "输出风格文件未找到"
             $errors++
         }
@@ -364,7 +392,7 @@ function Test-Installation {
     }
 
     # 检查 settings.json 中的 outputStyle
-    if ($EnableOutputStyle -and (Test-Path $SettingsFile)) {
+    if ($EnableOutputStyle -and (Test-PathSafe $SettingsFile)) {
         $content = Get-Content $SettingsFile -Raw
         if ($content -match "`"outputStyle`".*`"$OutputStyleName`"") {
             Write-Success "settings.json outputStyle ✓"
@@ -376,7 +404,7 @@ function Test-Installation {
 
     # 检查 run_skill.py
     $runSkillPath = Join-Path $SkillsDir "run_skill.py"
-    if (-not (Test-Path $runSkillPath)) {
+    if (-not (Test-PathSafe $runSkillPath)) {
         Write-Error "run_skill.py 未找到"
         $errors++
     }
@@ -392,7 +420,7 @@ function Test-Installation {
         $skillMdPath = Join-Path $skillDir "SKILL.md"
         $scriptPath = Join-Path $skillDir "scripts/$scriptName"
 
-        if ((Test-Path $skillMdPath) -and (Test-Path $scriptPath)) {
+        if ((Test-PathSafe $skillMdPath) -and (Test-PathSafe $scriptPath)) {
             $skillCount++
         }
         else {
@@ -471,6 +499,7 @@ function Write-SuccessBanner {
 Write-Banner
 Select-Target
 Init-TargetVars
+Assert-Initialized
 Test-Dependencies
 Backup-Existing
 Install-Config

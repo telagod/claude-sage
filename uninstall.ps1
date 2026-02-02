@@ -29,12 +29,55 @@ $Skills = @("verify-security", "verify-module", "verify-change", "verify-quality
 # 输出风格
 $OutputStyleName = "mechanicus-sage"
 
+function Get-UserProfileDir {
+    $home = $env:USERPROFILE
+    if ([string]::IsNullOrWhiteSpace($home)) {
+        $home = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
+    }
+    if ([string]::IsNullOrWhiteSpace($home)) {
+        $home = $HOME
+    }
+    if ([string]::IsNullOrWhiteSpace($home)) {
+        throw "无法确定用户目录（USERPROFILE/UserProfile/HOME 均为空）"
+    }
+    return $home
+}
+
+function Test-PathSafe {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
+    return Test-Path -LiteralPath $Path
+}
+
+function Ensure-Directory {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        throw "路径为空，无法创建目录"
+    }
+    if (-not (Test-Path -LiteralPath $Path)) {
+        New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    }
+}
+
+function Assert-Initialized {
+    $missing = @()
+    if ([string]::IsNullOrWhiteSpace($Target)) { $missing += "Target" }
+    if ([string]::IsNullOrWhiteSpace($BaseDir)) { $missing += "BaseDir" }
+    if ([string]::IsNullOrWhiteSpace($BackupDir)) { $missing += "BackupDir" }
+    if ([string]::IsNullOrWhiteSpace($SkillsDir)) { $missing += "SkillsDir" }
+    if ([string]::IsNullOrWhiteSpace($ConfigFilename)) { $missing += "ConfigFilename" }
+    if ($missing.Count -gt 0) {
+        throw ("初始化失败：{0}" -f ($missing -join ", "))
+    }
+}
+
 function Select-Target {
     if ($script:Target) { return }
 
     $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-    $claudeDir = Join-Path $env:USERPROFILE ".claude"
-    $codexDir = Join-Path $env:USERPROFILE ".codex"
+    $userHome = Get-UserProfileDir
+    $claudeDir = Join-Path $userHome ".claude"
+    $codexDir = Join-Path $userHome ".codex"
 
     if ($scriptDir -eq $claudeDir) {
         $script:Target = "claude"
@@ -64,14 +107,15 @@ function Select-Target {
 }
 
 function Init-TargetVars {
+    $userHome = Get-UserProfileDir
     switch ($script:Target) {
         "claude" {
-            $script:BaseDir = Join-Path $env:USERPROFILE ".claude"
+            $script:BaseDir = Join-Path $userHome ".claude"
             $script:ConfigFilename = "CLAUDE.md"
             $script:EnableOutputStyle = $true
         }
         "codex" {
-            $script:BaseDir = Join-Path $env:USERPROFILE ".codex"
+            $script:BaseDir = Join-Path $userHome ".codex"
             $script:ConfigFilename = "AGENTS.md"
             $script:EnableOutputStyle = $false
         }
@@ -130,7 +174,7 @@ function Remove-InstalledFiles {
 
     # 移除配置文件（CLAUDE.md / AGENTS.md）
     $configPath = Join-Path $BaseDir $ConfigFilename
-    if (Test-Path $configPath) {
+    if (Test-PathSafe $configPath) {
         Remove-Item -Force $configPath
         Write-Success "  移除 $ConfigFilename"
     }
@@ -138,7 +182,7 @@ function Remove-InstalledFiles {
     # 移除输出风格文件
     if ($EnableOutputStyle) {
         $styleFile = Join-Path $OutputStylesDir "$OutputStyleName.md"
-        if (Test-Path $styleFile) {
+        if (Test-PathSafe $styleFile) {
             Remove-Item -Force $styleFile
             Write-Success "  移除 output-styles/$OutputStyleName.md"
         }
@@ -146,7 +190,7 @@ function Remove-InstalledFiles {
 
     # 如果 output-styles 目录为空，删除它
     if ($EnableOutputStyle) {
-        if ((Test-Path $OutputStylesDir) -and ((Get-ChildItem $OutputStylesDir -ErrorAction SilentlyContinue | Measure-Object).Count -eq 0)) {
+        if ((Test-PathSafe $OutputStylesDir) -and ((Get-ChildItem $OutputStylesDir -ErrorAction SilentlyContinue | Measure-Object).Count -eq 0)) {
             Remove-Item -Force $OutputStylesDir
             Write-Success "  移除空的 output-styles\ 目录"
         }
@@ -154,7 +198,7 @@ function Remove-InstalledFiles {
 
     # 移除 run_skill.py
     $runSkillPath = Join-Path $SkillsDir "run_skill.py"
-    if (Test-Path $runSkillPath) {
+    if (Test-PathSafe $runSkillPath) {
         Remove-Item -Force $runSkillPath
         Write-Success "  移除 skills/run_skill.py"
     }
@@ -162,14 +206,14 @@ function Remove-InstalledFiles {
     # 移除每个 skill 目录
     foreach ($skill in $Skills) {
         $skillPath = Join-Path $SkillsDir $skill
-        if (Test-Path $skillPath) {
+        if (Test-PathSafe $skillPath) {
             Remove-Item -Recurse -Force $skillPath
             Write-Success "  移除 skills/$skill/"
         }
     }
 
     # 如果 skills 目录为空，删除它
-    if ((Test-Path $SkillsDir) -and ((Get-ChildItem $SkillsDir -ErrorAction SilentlyContinue | Measure-Object).Count -eq 0)) {
+    if ((Test-PathSafe $SkillsDir) -and ((Get-ChildItem $SkillsDir -ErrorAction SilentlyContinue | Measure-Object).Count -eq 0)) {
         Remove-Item -Force $SkillsDir
         Write-Success "  移除空的 skills/ 目录"
     }
@@ -180,7 +224,7 @@ function Remove-InstalledFiles {
 function Restore-Backup {
     Write-Info "恢复备份..."
 
-    if (-not (Test-Path $BackupDir) -or -not (Test-Path $ManifestFile)) {
+    if (-not (Test-PathSafe $BackupDir) -or -not (Test-PathSafe $ManifestFile)) {
         Write-Info "无备份可恢复（首次安装或备份已清理）"
         return
     }
@@ -189,7 +233,7 @@ function Restore-Backup {
 
     # 恢复配置文件
     $backupConfig = Join-Path $BackupDir $ConfigFilename
-    if (Test-Path $backupConfig) {
+    if (Test-PathSafe $backupConfig) {
         $configPath = Join-Path $BaseDir $ConfigFilename
         Copy-Item $backupConfig $configPath
         Write-Success "  恢复 $ConfigFilename"
@@ -199,7 +243,7 @@ function Restore-Backup {
     # 恢复 settings.json
     if ($EnableOutputStyle) {
         $backupSettings = Join-Path $BackupDir "settings.json"
-        if (Test-Path $backupSettings) {
+        if (Test-PathSafe $backupSettings) {
             Copy-Item $backupSettings $SettingsFile
             Write-Success "  恢复 settings.json"
             $restored++
@@ -209,10 +253,8 @@ function Restore-Backup {
     # 恢复输出风格文件
     if ($EnableOutputStyle) {
         $backupStyleFile = Join-Path $BackupDir "output-styles/$OutputStyleName.md"
-        if (Test-Path $backupStyleFile) {
-            if (-not (Test-Path $OutputStylesDir)) {
-                New-Item -ItemType Directory -Path $OutputStylesDir -Force | Out-Null
-            }
+        if (Test-PathSafe $backupStyleFile) {
+            Ensure-Directory $OutputStylesDir
             Copy-Item $backupStyleFile $OutputStylesDir
             Write-Success "  恢复 output-styles/$OutputStyleName.md"
             $restored++
@@ -221,10 +263,8 @@ function Restore-Backup {
 
     # 恢复 run_skill.py
     $backupRunSkill = Join-Path $BackupDir "run_skill.py"
-    if (Test-Path $backupRunSkill) {
-        if (-not (Test-Path $SkillsDir)) {
-            New-Item -ItemType Directory -Path $SkillsDir -Force | Out-Null
-        }
+    if (Test-PathSafe $backupRunSkill) {
+        Ensure-Directory $SkillsDir
         $runSkillPath = Join-Path $SkillsDir "run_skill.py"
         Copy-Item $backupRunSkill $runSkillPath
         Write-Success "  恢复 skills/run_skill.py"
@@ -234,11 +274,9 @@ function Restore-Backup {
     # 恢复每个 skill 目录
     foreach ($skill in $Skills) {
         $backupSkillDir = Join-Path $BackupDir "skills/$skill"
-        if (Test-Path $backupSkillDir) {
+        if (Test-PathSafe $backupSkillDir) {
             $skillDir = Join-Path $SkillsDir $skill
-            if (-not (Test-Path $skillDir)) {
-                New-Item -ItemType Directory -Path $skillDir -Force | Out-Null
-            }
+            Ensure-Directory $skillDir
             Copy-Item -Recurse "$backupSkillDir/*" $skillDir -Force
             Write-Success "  恢复 skills/$skill/"
             $restored++
@@ -256,7 +294,7 @@ function Restore-Backup {
 function Clear-Backup {
     Write-Info "清理备份目录..."
 
-    if (Test-Path $BackupDir) {
+    if (Test-PathSafe $BackupDir) {
         Remove-Item -Recurse -Force $BackupDir
         Write-Success "  备份目录已清理"
     }
@@ -265,7 +303,7 @@ function Clear-Backup {
     $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     if (($scriptDir -eq $BaseDir) -and ((Split-Path -Leaf $MyInvocation.MyCommand.Path) -eq ".sage-uninstall.ps1")) {
         $selfPath = Join-Path $BaseDir ".sage-uninstall.ps1"
-        if (Test-Path $selfPath) {
+        if (Test-PathSafe $selfPath) {
             Remove-Item -Force $selfPath
             Write-Success "  卸载脚本已移除"
         }
@@ -296,6 +334,7 @@ function Write-SuccessBanner {
 Write-Banner
 Select-Target
 Init-TargetVars
+Assert-Initialized
 Confirm-Uninstall
 Remove-InstalledFiles
 Restore-Backup
