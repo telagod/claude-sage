@@ -7,12 +7,12 @@ $ErrorActionPreference = "Stop"
 
 # 配置
 $RepoUrl = "https://raw.githubusercontent.com/telagod/claude-sage/main"
-$ClaudeDir = "$env:USERPROFILE\.claude"
-$BackupDir = "$ClaudeDir\.sage-backup"
-$SkillsDir = "$ClaudeDir\skills"
-$OutputStylesDir = "$ClaudeDir\output-styles"
-$SettingsFile = "$ClaudeDir\settings.json"
-$ManifestFile = "$BackupDir\manifest.txt"
+$ClaudeDir = Join-Path $env:USERPROFILE ".claude"
+$BackupDir = Join-Path $ClaudeDir ".sage-backup"
+$SkillsDir = Join-Path $ClaudeDir "skills"
+$OutputStylesDir = Join-Path $ClaudeDir "output-styles"
+$SettingsFile = Join-Path $ClaudeDir "settings.json"
+$ManifestFile = Join-Path $BackupDir "manifest.txt"
 
 # Skills 列表
 $Skills = @("verify-security", "verify-module", "verify-change", "verify-quality", "gen-docs")
