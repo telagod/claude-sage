@@ -17,8 +17,9 @@ NC='\033[0m'
 # 配置
 REPO_URL="https://raw.githubusercontent.com/telagod/claude-sage/main"
 CLAUDE_DIR="$HOME/.claude"
-BACKUP_DIR="$CLAUDE_DIR/backup"
+BACKUP_DIR="$CLAUDE_DIR/.sage-backup"
 SKILLS_DIR="$CLAUDE_DIR/skills"
+MANIFEST_FILE="$BACKUP_DIR/manifest.txt"
 
 # Skills 列表
 SKILLS=("verify-security" "verify-module" "verify-change" "verify-quality" "gen-docs")
@@ -36,7 +37,7 @@ print_banner() {
     echo -e "${CYAN}"
     echo "⚙️ ═══════════════════════════════════════════════════════════════ ⚙️"
     echo "       机械神教·铸造贤者 安装程序"
-    echo "       Claude Sage Installer v1.1.0"
+    echo "       Claude Sage Installer v1.2.0"
     echo "⚙️ ═══════════════════════════════════════════════════════════════ ⚙️"
     echo -e "${NC}"
 }
@@ -86,20 +87,48 @@ download_file() {
 }
 
 backup_existing() {
-    local timestamp=$(date +%Y%m%d_%H%M%S)
+    log_info "备份现有配置..."
 
+    # 创建备份目录
+    mkdir -p "$BACKUP_DIR"
+
+    # 清空旧的 manifest
+    > "$MANIFEST_FILE"
+
+    # 备份 CLAUDE.md
     if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
-        log_info "备份现有配置..."
-        mkdir -p "$BACKUP_DIR"
-        cp "$CLAUDE_DIR/CLAUDE.md" "$BACKUP_DIR/CLAUDE.md.$timestamp"
-        log_success "已备份到 $BACKUP_DIR/CLAUDE.md.$timestamp"
+        cp "$CLAUDE_DIR/CLAUDE.md" "$BACKUP_DIR/CLAUDE.md"
+        echo "CLAUDE.md" >> "$MANIFEST_FILE"
+        log_success "  备份 CLAUDE.md"
     fi
 
-    if [ -d "$SKILLS_DIR" ] && [ "$(ls -A $SKILLS_DIR 2>/dev/null)" ]; then
-        log_info "备份现有 skills..."
-        mkdir -p "$BACKUP_DIR"
-        cp -r "$SKILLS_DIR" "$BACKUP_DIR/skills.$timestamp"
-        log_success "已备份到 $BACKUP_DIR/skills.$timestamp"
+    # 备份 skills 目录中受影响的文件
+    if [ -d "$SKILLS_DIR" ]; then
+        # 备份 run_skill.py
+        if [ -f "$SKILLS_DIR/run_skill.py" ]; then
+            cp "$SKILLS_DIR/run_skill.py" "$BACKUP_DIR/run_skill.py"
+            echo "skills/run_skill.py" >> "$MANIFEST_FILE"
+            log_success "  备份 skills/run_skill.py"
+        fi
+
+        # 备份每个 skill 目录
+        for skill in "${SKILLS[@]}"; do
+            if [ -d "$SKILLS_DIR/$skill" ]; then
+                mkdir -p "$BACKUP_DIR/skills/$skill"
+                cp -r "$SKILLS_DIR/$skill"/* "$BACKUP_DIR/skills/$skill/" 2>/dev/null || true
+                echo "skills/$skill" >> "$MANIFEST_FILE"
+                log_success "  备份 skills/$skill/"
+            fi
+        done
+    fi
+
+    # 记录安装时间
+    echo "# Installed: $(date)" >> "$MANIFEST_FILE"
+
+    if [ -s "$MANIFEST_FILE" ]; then
+        log_success "备份完成，清单保存至 $MANIFEST_FILE"
+    else
+        log_info "无需备份（首次安装）"
     fi
 }
 
@@ -111,7 +140,7 @@ install_config() {
 
     # 下载 CLAUDE.md 到 ~/.claude/
     download_file "$REPO_URL/config/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
-    log_success "CLAUDE.md 已安装到 $CLAUDE_DIR/"
+    log_success "CLAUDE.md 已安装"
 }
 
 install_skills() {
@@ -144,6 +173,14 @@ install_skills() {
     done
 
     log_success "Skills 安装完成"
+}
+
+install_uninstaller() {
+    log_info "安装卸载脚本..."
+
+    download_file "$REPO_URL/uninstall.sh" "$CLAUDE_DIR/.sage-uninstall.sh"
+    chmod +x "$CLAUDE_DIR/.sage-uninstall.sh"
+    log_success "卸载脚本已安装"
 }
 
 verify_installation() {
@@ -202,11 +239,11 @@ print_success() {
     echo "  已安装文件结构:"
     echo "    $CLAUDE_DIR/"
     echo "    ├── CLAUDE.md"
+    echo "    ├── .sage-backup/          # 备份目录"
+    echo "    ├── .sage-uninstall.sh     # 卸载脚本"
     echo "    └── skills/"
     echo "        ├── run_skill.py"
     echo "        ├── verify-security/"
-    echo "        │   ├── SKILL.md"
-    echo "        │   └── scripts/security_scanner.py"
     echo "        ├── verify-module/"
     echo "        ├── verify-change/"
     echo "        ├── verify-quality/"
@@ -218,6 +255,9 @@ print_success() {
     echo "    /verify-change    - 变更校验"
     echo "    /verify-quality   - 代码质量检查"
     echo "    /gen-docs         - 文档生成器"
+    echo ""
+    echo "  卸载命令:"
+    echo "    ~/.claude/.sage-uninstall.sh"
     echo ""
     echo "  现在启动 Claude Code，即可体验「机械神教·铸造贤者」风格"
     echo ""
@@ -231,6 +271,7 @@ main() {
     backup_existing
     install_config
     install_skills
+    install_uninstaller
     verify_installation
     print_success
 }

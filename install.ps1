@@ -8,8 +8,9 @@ $ErrorActionPreference = "Stop"
 # 配置
 $RepoUrl = "https://raw.githubusercontent.com/telagod/claude-sage/main"
 $ClaudeDir = "$env:USERPROFILE\.claude"
-$BackupDir = "$ClaudeDir\backup"
+$BackupDir = "$ClaudeDir\.sage-backup"
 $SkillsDir = "$ClaudeDir\skills"
+$ManifestFile = "$BackupDir\manifest.txt"
 
 # Skills 列表
 $Skills = @("verify-security", "verify-module", "verify-change", "verify-quality", "gen-docs")
@@ -27,7 +28,7 @@ function Write-Banner {
     Write-Host ""
     Write-Host "⚙️ ═══════════════════════════════════════════════════════════════ ⚙️" -ForegroundColor Cyan
     Write-Host "       机械神教·铸造贤者 安装程序" -ForegroundColor Cyan
-    Write-Host "       Claude Sage Installer v1.1.0" -ForegroundColor Cyan
+    Write-Host "       Claude Sage Installer v1.2.0" -ForegroundColor Cyan
     Write-Host "⚙️ ═══════════════════════════════════════════════════════════════ ⚙️" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -73,28 +74,55 @@ function Test-Dependencies {
 }
 
 function Backup-Existing {
-    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    Write-Info "备份现有配置..."
 
-    if (Test-Path "$ClaudeDir\CLAUDE.md") {
-        Write-Info "备份现有配置..."
-
-        if (-not (Test-Path $BackupDir)) {
-            New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
-        }
-
-        Copy-Item "$ClaudeDir\CLAUDE.md" "$BackupDir\CLAUDE.md.$timestamp"
-        Write-Success "已备份到 $BackupDir\CLAUDE.md.$timestamp"
+    # 创建备份目录
+    if (-not (Test-Path $BackupDir)) {
+        New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
     }
 
-    if ((Test-Path $SkillsDir) -and (Get-ChildItem $SkillsDir -ErrorAction SilentlyContinue)) {
-        Write-Info "备份现有 skills..."
+    # 清空旧的 manifest
+    "" | Out-File -FilePath $ManifestFile -Encoding UTF8
 
-        if (-not (Test-Path $BackupDir)) {
-            New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
+    # 备份 CLAUDE.md
+    if (Test-Path "$ClaudeDir\CLAUDE.md") {
+        Copy-Item "$ClaudeDir\CLAUDE.md" "$BackupDir\CLAUDE.md"
+        "CLAUDE.md" | Add-Content -Path $ManifestFile
+        Write-Success "  备份 CLAUDE.md"
+    }
+
+    # 备份 skills 目录中受影响的文件
+    if (Test-Path $SkillsDir) {
+        # 备份 run_skill.py
+        if (Test-Path "$SkillsDir\run_skill.py") {
+            Copy-Item "$SkillsDir\run_skill.py" "$BackupDir\run_skill.py"
+            "skills\run_skill.py" | Add-Content -Path $ManifestFile
+            Write-Success "  备份 skills\run_skill.py"
         }
 
-        Copy-Item -Recurse $SkillsDir "$BackupDir\skills.$timestamp"
-        Write-Success "已备份到 $BackupDir\skills.$timestamp"
+        # 备份每个 skill 目录
+        foreach ($skill in $Skills) {
+            if (Test-Path "$SkillsDir\$skill") {
+                $backupSkillDir = "$BackupDir\skills\$skill"
+                if (-not (Test-Path $backupSkillDir)) {
+                    New-Item -ItemType Directory -Path $backupSkillDir -Force | Out-Null
+                }
+                Copy-Item -Recurse "$SkillsDir\$skill\*" $backupSkillDir -Force -ErrorAction SilentlyContinue
+                "skills\$skill" | Add-Content -Path $ManifestFile
+                Write-Success "  备份 skills\$skill\"
+            }
+        }
+    }
+
+    # 记录安装时间
+    "# Installed: $(Get-Date)" | Add-Content -Path $ManifestFile
+
+    $manifestContent = Get-Content $ManifestFile -ErrorAction SilentlyContinue
+    if ($manifestContent -and $manifestContent.Count -gt 1) {
+        Write-Success "备份完成，清单保存至 $ManifestFile"
+    }
+    else {
+        Write-Info "无需备份（首次安装）"
     }
 }
 
@@ -109,7 +137,7 @@ function Install-Config {
     # 下载 CLAUDE.md
     $configUrl = "$RepoUrl/config/CLAUDE.md"
     Invoke-WebRequest -Uri $configUrl -OutFile "$ClaudeDir\CLAUDE.md" -UseBasicParsing
-    Write-Success "CLAUDE.md 已安装到 $ClaudeDir\"
+    Write-Success "CLAUDE.md 已安装"
 }
 
 function Install-Skills {
@@ -153,6 +181,14 @@ function Install-Skills {
     }
 
     Write-Success "Skills 安装完成"
+}
+
+function Install-Uninstaller {
+    Write-Info "安装卸载脚本..."
+
+    $uninstallUrl = "$RepoUrl/uninstall.ps1"
+    Invoke-WebRequest -Uri $uninstallUrl -OutFile "$ClaudeDir\.sage-uninstall.ps1" -UseBasicParsing
+    Write-Success "卸载脚本已安装"
 }
 
 function Test-Installation {
@@ -219,11 +255,11 @@ function Write-SuccessBanner {
     Write-Host "  已安装文件结构:"
     Write-Host "    $ClaudeDir\"
     Write-Host "    ├── CLAUDE.md"
+    Write-Host "    ├── .sage-backup\          # 备份目录"
+    Write-Host "    ├── .sage-uninstall.ps1    # 卸载脚本"
     Write-Host "    └── skills\"
     Write-Host "        ├── run_skill.py"
     Write-Host "        ├── verify-security\"
-    Write-Host "        │   ├── SKILL.md"
-    Write-Host "        │   └── scripts\security_scanner.py"
     Write-Host "        ├── verify-module\"
     Write-Host "        ├── verify-change\"
     Write-Host "        ├── verify-quality\"
@@ -235,6 +271,9 @@ function Write-SuccessBanner {
     Write-Host "    /verify-change    - 变更校验"
     Write-Host "    /verify-quality   - 代码质量检查"
     Write-Host "    /gen-docs         - 文档生成器"
+    Write-Host ""
+    Write-Host "  卸载命令:"
+    Write-Host "    & `"$ClaudeDir\.sage-uninstall.ps1`""
     Write-Host ""
     Write-Host "  现在启动 Claude Code，即可体验「机械神教·铸造贤者」风格"
     Write-Host ""
@@ -248,6 +287,7 @@ Test-Dependencies
 Backup-Existing
 Install-Config
 Install-Skills
+Install-Uninstaller
 if (Test-Installation) {
     Write-SuccessBanner
 }

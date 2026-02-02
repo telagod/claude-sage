@@ -143,13 +143,20 @@ cd claude-sage
 
 ## 🗑️ 卸载
 
+安装时会自动备份受影响的文件，卸载时自动恢复。
+
 ```bash
 # Linux / macOS
-rm -rf ~/.claude/CLAUDE.md ~/.claude/skills
+~/.claude/.sage-uninstall.sh
 
 # Windows (PowerShell)
-Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\CLAUDE.md", "$env:USERPROFILE\.claude\skills"
+& "$env:USERPROFILE\.claude\.sage-uninstall.ps1"
 ```
+
+卸载脚本会：
+- ✓ 移除 Claude Sage 安装的所有文件
+- ✓ 自动恢复之前备份的配置
+- ✓ 清理备份目录
 
 ---
 
