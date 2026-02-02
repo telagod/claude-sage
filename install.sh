@@ -72,17 +72,18 @@ download_file() {
 }
 
 backup_existing() {
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+
     if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
         log_info "备份现有配置..."
         mkdir -p "$BACKUP_DIR"
-        local timestamp=$(date +%Y%m%d_%H%M%S)
         cp "$CLAUDE_DIR/CLAUDE.md" "$BACKUP_DIR/CLAUDE.md.$timestamp"
         log_success "已备份到 $BACKUP_DIR/CLAUDE.md.$timestamp"
     fi
 
-    if [ -d "$SKILLS_DIR" ]; then
+    if [ -d "$SKILLS_DIR" ] && [ "$(ls -A $SKILLS_DIR 2>/dev/null)" ]; then
         log_info "备份现有 skills..."
-        local timestamp=$(date +%Y%m%d_%H%M%S)
+        mkdir -p "$BACKUP_DIR"
         cp -r "$SKILLS_DIR" "$BACKUP_DIR/skills.$timestamp"
         log_success "已备份到 $BACKUP_DIR/skills.$timestamp"
     fi
@@ -90,16 +91,23 @@ backup_existing() {
 
 install_config() {
     log_info "安装配置文件..."
+
+    # 创建 .claude 目录
     mkdir -p "$CLAUDE_DIR"
+
+    # 下载 CLAUDE.md 到 ~/.claude/
     download_file "$REPO_URL/config/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
-    log_success "CLAUDE.md 已安装"
+    log_success "CLAUDE.md 已安装到 $CLAUDE_DIR/"
 }
 
 install_skills() {
     log_info "安装 skills..."
+
+    # 创建 skills 目录
     mkdir -p "$SKILLS_DIR"
 
-    local skills=(
+    # Python 脚本文件
+    local py_scripts=(
         "run_skill.py"
         "verify_security.py"
         "verify_module.py"
@@ -108,12 +116,28 @@ install_skills() {
         "gen_docs.py"
     )
 
-    for skill in "${skills[@]}"; do
-        download_file "$REPO_URL/skills/$skill" "$SKILLS_DIR/$skill"
-        log_success "  $skill"
+    # Skill 描述文件 (.md) - Claude Code 需要这些文件来识别 skills
+    local skill_mds=(
+        "verify-security.md"
+        "verify-module.md"
+        "verify-change.md"
+        "verify-quality.md"
+        "gen-docs.md"
+    )
+
+    log_info "  下载 Python 脚本..."
+    for script in "${py_scripts[@]}"; do
+        download_file "$REPO_URL/skills/$script" "$SKILLS_DIR/$script"
+        chmod +x "$SKILLS_DIR/$script"
+        log_success "    $script"
     done
 
-    chmod +x "$SKILLS_DIR"/*.py
+    log_info "  下载 Skill 描述文件..."
+    for md in "${skill_mds[@]}"; do
+        download_file "$REPO_URL/skills/$md" "$SKILLS_DIR/$md"
+        log_success "    $md"
+    done
+
     log_success "Skills 安装完成"
 }
 
@@ -122,14 +146,42 @@ verify_installation() {
 
     local errors=0
 
+    # 检查 CLAUDE.md
     if [ ! -f "$CLAUDE_DIR/CLAUDE.md" ]; then
         log_error "CLAUDE.md 未找到"
         ((errors++))
+    else
+        log_success "CLAUDE.md ✓"
     fi
 
+    # 检查 skills 目录
+    if [ ! -d "$SKILLS_DIR" ]; then
+        log_error "skills 目录未找到"
+        ((errors++))
+    else
+        log_success "skills 目录 ✓"
+    fi
+
+    # 检查 Python 入口
     if [ ! -f "$SKILLS_DIR/run_skill.py" ]; then
         log_error "run_skill.py 未找到"
         ((errors++))
+    else
+        log_success "run_skill.py ✓"
+    fi
+
+    # 检查 skill 描述文件
+    local skill_count=0
+    for md in verify-security.md verify-module.md verify-change.md verify-quality.md gen-docs.md; do
+        if [ -f "$SKILLS_DIR/$md" ]; then
+            ((skill_count++))
+        fi
+    done
+
+    if [ $skill_count -eq 5 ]; then
+        log_success "Skill 描述文件 ($skill_count/5) ✓"
+    else
+        log_warn "Skill 描述文件不完整 ($skill_count/5)"
     fi
 
     if [ $errors -eq 0 ]; then
@@ -147,8 +199,16 @@ print_success() {
     echo -e "${GREEN}  ✓ 安装完成！${NC}"
     echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo "  配置文件: $CLAUDE_DIR/CLAUDE.md"
-    echo "  Skills:   $SKILLS_DIR/"
+    echo "  已安装文件:"
+    echo "    配置文件: $CLAUDE_DIR/CLAUDE.md"
+    echo "    Skills:   $SKILLS_DIR/"
+    echo ""
+    echo "  已安装的 Skills:"
+    echo "    /verify-security  - 安全校验"
+    echo "    /verify-module    - 模块完整性校验"
+    echo "    /verify-change    - 变更校验"
+    echo "    /verify-quality   - 代码质量检查"
+    echo "    /gen-docs         - 文档生成器"
     echo ""
     echo "  现在启动 Claude Code，即可体验「机械神教·铸造贤者」风格"
     echo ""

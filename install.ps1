@@ -61,6 +61,8 @@ function Test-Dependencies {
 }
 
 function Backup-Existing {
+    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+
     if (Test-Path "$ClaudeDir\CLAUDE.md") {
         Write-Info "备份现有配置..."
 
@@ -68,14 +70,17 @@ function Backup-Existing {
             New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
         }
 
-        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
         Copy-Item "$ClaudeDir\CLAUDE.md" "$BackupDir\CLAUDE.md.$timestamp"
         Write-Success "已备份到 $BackupDir\CLAUDE.md.$timestamp"
     }
 
-    if (Test-Path $SkillsDir) {
+    if ((Test-Path $SkillsDir) -and (Get-ChildItem $SkillsDir -ErrorAction SilentlyContinue)) {
         Write-Info "备份现有 skills..."
-        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+
+        if (-not (Test-Path $BackupDir)) {
+            New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
+        }
+
         Copy-Item -Recurse $SkillsDir "$BackupDir\skills.$timestamp"
         Write-Success "已备份到 $BackupDir\skills.$timestamp"
     }
@@ -84,23 +89,27 @@ function Backup-Existing {
 function Install-Config {
     Write-Info "安装配置文件..."
 
+    # 创建 .claude 目录
     if (-not (Test-Path $ClaudeDir)) {
         New-Item -ItemType Directory -Path $ClaudeDir -Force | Out-Null
     }
 
+    # 下载 CLAUDE.md
     $configUrl = "$RepoUrl/config/CLAUDE.md"
     Invoke-WebRequest -Uri $configUrl -OutFile "$ClaudeDir\CLAUDE.md" -UseBasicParsing
-    Write-Success "CLAUDE.md 已安装"
+    Write-Success "CLAUDE.md 已安装到 $ClaudeDir\"
 }
 
 function Install-Skills {
     Write-Info "安装 skills..."
 
+    # 创建 skills 目录
     if (-not (Test-Path $SkillsDir)) {
         New-Item -ItemType Directory -Path $SkillsDir -Force | Out-Null
     }
 
-    $skills = @(
+    # Python 脚本文件
+    $pyScripts = @(
         "run_skill.py",
         "verify_security.py",
         "verify_module.py",
@@ -109,10 +118,27 @@ function Install-Skills {
         "gen_docs.py"
     )
 
-    foreach ($skill in $skills) {
-        $skillUrl = "$RepoUrl/skills/$skill"
-        Invoke-WebRequest -Uri $skillUrl -OutFile "$SkillsDir\$skill" -UseBasicParsing
-        Write-Success "  $skill"
+    # Skill 描述文件 (.md) - Claude Code 需要这些文件来识别 skills
+    $skillMds = @(
+        "verify-security.md",
+        "verify-module.md",
+        "verify-change.md",
+        "verify-quality.md",
+        "gen-docs.md"
+    )
+
+    Write-Info "  下载 Python 脚本..."
+    foreach ($script in $pyScripts) {
+        $scriptUrl = "$RepoUrl/skills/$script"
+        Invoke-WebRequest -Uri $scriptUrl -OutFile "$SkillsDir\$script" -UseBasicParsing
+        Write-Success "    $script"
+    }
+
+    Write-Info "  下载 Skill 描述文件..."
+    foreach ($md in $skillMds) {
+        $mdUrl = "$RepoUrl/skills/$md"
+        Invoke-WebRequest -Uri $mdUrl -OutFile "$SkillsDir\$md" -UseBasicParsing
+        Write-Success "    $md"
     }
 
     Write-Success "Skills 安装完成"
@@ -123,14 +149,47 @@ function Test-Installation {
 
     $errors = 0
 
+    # 检查 CLAUDE.md
     if (-not (Test-Path "$ClaudeDir\CLAUDE.md")) {
         Write-Error "CLAUDE.md 未找到"
         $errors++
     }
+    else {
+        Write-Success "CLAUDE.md ✓"
+    }
 
+    # 检查 skills 目录
+    if (-not (Test-Path $SkillsDir)) {
+        Write-Error "skills 目录未找到"
+        $errors++
+    }
+    else {
+        Write-Success "skills 目录 ✓"
+    }
+
+    # 检查 Python 入口
     if (-not (Test-Path "$SkillsDir\run_skill.py")) {
         Write-Error "run_skill.py 未找到"
         $errors++
+    }
+    else {
+        Write-Success "run_skill.py ✓"
+    }
+
+    # 检查 skill 描述文件
+    $skillCount = 0
+    $skillMds = @("verify-security.md", "verify-module.md", "verify-change.md", "verify-quality.md", "gen-docs.md")
+    foreach ($md in $skillMds) {
+        if (Test-Path "$SkillsDir\$md") {
+            $skillCount++
+        }
+    }
+
+    if ($skillCount -eq 5) {
+        Write-Success "Skill 描述文件 ($skillCount/5) ✓"
+    }
+    else {
+        Write-Warning "Skill 描述文件不完整 ($skillCount/5)"
     }
 
     if ($errors -eq 0) {
@@ -149,8 +208,16 @@ function Write-SuccessBanner {
     Write-Host "  ✓ 安装完成！" -ForegroundColor Green
     Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
     Write-Host ""
-    Write-Host "  配置文件: $ClaudeDir\CLAUDE.md"
-    Write-Host "  Skills:   $SkillsDir\"
+    Write-Host "  已安装文件:"
+    Write-Host "    配置文件: $ClaudeDir\CLAUDE.md"
+    Write-Host "    Skills:   $SkillsDir\"
+    Write-Host ""
+    Write-Host "  已安装的 Skills:"
+    Write-Host "    /verify-security  - 安全校验"
+    Write-Host "    /verify-module    - 模块完整性校验"
+    Write-Host "    /verify-change    - 变更校验"
+    Write-Host "    /verify-quality   - 代码质量检查"
+    Write-Host "    /gen-docs         - 文档生成器"
     Write-Host ""
     Write-Host "  现在启动 Claude Code，即可体验「机械神教·铸造贤者」风格"
     Write-Host ""
