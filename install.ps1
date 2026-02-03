@@ -40,17 +40,17 @@ $ScriptNames = @{
 $OutputStyleName = "mechanicus-sage"
 
 function Get-UserProfileDir {
-    $home = $env:USERPROFILE
-    if ([string]::IsNullOrWhiteSpace($home)) {
-        $home = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
+    $userHome = $env:USERPROFILE
+    if ([string]::IsNullOrWhiteSpace($userHome)) {
+        $userHome = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
     }
-    if ([string]::IsNullOrWhiteSpace($home)) {
-        $home = $HOME
+    if ([string]::IsNullOrWhiteSpace($userHome)) {
+        $userHome = $HOME
     }
-    if ([string]::IsNullOrWhiteSpace($home)) {
+    if ([string]::IsNullOrWhiteSpace($userHome)) {
         throw "无法确定用户目录（USERPROFILE/UserProfile/HOME 均为空）"
     }
-    return $home
+    return $userHome
 }
 
 function Test-PathSafe {
