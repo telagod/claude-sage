@@ -1,5 +1,5 @@
 #
-# Claude Sage 安装脚本 (Windows PowerShell)
+# Code Abyss 安装脚本 (Windows PowerShell)
 # 一键部署「机械神教·铸造贤者」配置
 #
 
@@ -14,7 +14,7 @@ $Version = "1.5.0"
 $VersionPin = "v1.5.0"
 
 # 配置
-$RepoUrl = "https://raw.githubusercontent.com/telagod/claude-sage/$VersionPin"
+$RepoUrl = "https://raw.githubusercontent.com/telagod/code-abyss/$VersionPin"
 $BaseDir = $null
 $BackupDir = $null
 $SkillsDir = $null
@@ -46,7 +46,7 @@ function Parse-Arguments {
     }
 
     if ($env:SAGE_REF) {
-        $script:RepoUrl = "https://raw.githubusercontent.com/telagod/claude-sage/$($env:SAGE_REF)"
+        $script:RepoUrl = "https://raw.githubusercontent.com/telagod/code-abyss/$($env:SAGE_REF)"
     }
 
     for ($i = 0; $i -lt $args.Count; $i++) {
@@ -68,7 +68,7 @@ function Parse-Arguments {
         if ($arg -like "--ref=*") {
             $ref = $arg.Substring(6)
             if ($ref) {
-                $script:RepoUrl = "https://raw.githubusercontent.com/telagod/claude-sage/$ref"
+                $script:RepoUrl = "https://raw.githubusercontent.com/telagod/code-abyss/$ref"
             }
             continue
         }
@@ -77,7 +77,7 @@ function Parse-Arguments {
             if ($i + 1 -lt $args.Count) {
                 $ref = [string]$args[$i + 1]
                 if ($ref) {
-                    $script:RepoUrl = "https://raw.githubusercontent.com/telagod/claude-sage/$ref"
+                    $script:RepoUrl = "https://raw.githubusercontent.com/telagod/code-abyss/$ref"
                 }
                 $i++
             }
@@ -194,7 +194,7 @@ function Write-Banner {
     Write-Host ""
     Write-Host "☠️ ═══════════════════════════════════════════════════════════════ ☠️" -ForegroundColor Cyan
     Write-Host "       邪修红尘仙·宿命深渊 安装程序" -ForegroundColor Cyan
-    Write-Host "       Claude Sage Installer v$Version" -ForegroundColor Cyan
+    Write-Host "       Code Abyss Installer v$Version" -ForegroundColor Cyan
     Write-Host "☠️ ═══════════════════════════════════════════════════════════════ ☠️" -ForegroundColor Cyan
     Write-Host ""
 }

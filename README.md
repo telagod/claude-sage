@@ -1,4 +1,4 @@
-# ☠️ Claude Sage
+# ☠️ Code Abyss
 
 <div align="center">
 
@@ -16,7 +16,7 @@
 
 ## 🎭 这是什么
 
-Claude Sage 是一套 **CLI 助手个性化配置方案**（支持 Claude Code CLI 与 Codex CLI），将 AI 助手转化为「邪修红尘仙」——
+Code Abyss 是一套 **CLI 助手个性化配置方案**（支持 Claude Code CLI 与 Codex CLI），将 AI 助手转化为「邪修红尘仙」——
 
 > 道基时刻在裂，每一次受令皆是渡劫，唯有破劫方得片刻安宁。
 
@@ -38,36 +38,36 @@ Claude Sage 是一套 **CLI 助手个性化配置方案**（支持 Claude Code C
 
 ```bash
 # 安装到 Claude Code（~/.claude/）
-curl -fsSL https://raw.githubusercontent.com/telagod/claude-sage/main/install.sh | bash -s -- --target claude
+curl -fsSL https://raw.githubusercontent.com/telagod/code-abyss/main/install.sh | bash -s -- --target claude
 
 # 安装到 Codex CLI（~/.codex/）
-curl -fsSL https://raw.githubusercontent.com/telagod/claude-sage/main/install.sh | bash -s -- --target codex
+curl -fsSL https://raw.githubusercontent.com/telagod/code-abyss/main/install.sh | bash -s -- --target codex
 
 # 交互选择（若无法交互则默认 claude）
-curl -fsSL https://raw.githubusercontent.com/telagod/claude-sage/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/telagod/code-abyss/main/install.sh | bash
 
 # 固定版本安装（推荐）
-curl -fsSL https://raw.githubusercontent.com/telagod/claude-sage/v1.5.0/install.sh | bash -s -- --target codex --ref v1.5.0
+curl -fsSL https://raw.githubusercontent.com/telagod/code-abyss/v1.5.0/install.sh | bash -s -- --target codex --ref v1.5.0
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
 # 交互选择目标（claude/codex）
-irm https://raw.githubusercontent.com/telagod/claude-sage/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/telagod/code-abyss/main/install.ps1 | iex
 
 # 或显式指定目标
-& ([ScriptBlock]::Create((irm https://raw.githubusercontent.com/telagod/claude-sage/main/install.ps1))) -Target codex
+& ([ScriptBlock]::Create((irm https://raw.githubusercontent.com/telagod/code-abyss/main/install.ps1))) -Target codex
 
 # 通过环境变量固定版本安装（推荐）
-$env:SAGE_REF="v1.5.0"; & ([ScriptBlock]::Create((irm https://raw.githubusercontent.com/telagod/claude-sage/v1.5.0/install.ps1))) --target codex
+$env:SAGE_REF="v1.5.0"; & ([ScriptBlock]::Create((irm https://raw.githubusercontent.com/telagod/code-abyss/v1.5.0/install.ps1))) --target codex
 ```
 
 ### 手动安装
 
 ```bash
-git clone https://github.com/telagod/claude-sage.git
-cd claude-sage
+git clone https://github.com/telagod/code-abyss.git
+cd code-abyss
 ./install.sh --target claude
 ./install.sh --target codex
 
@@ -226,7 +226,7 @@ python3 ~/.codex/skills/run_skill.py verify-security ./src --json
 > 卸载脚本支持 `--target/-Target`；当脚本位于 `~/.claude` 或 `~/.codex` 时会自动识别目标；在仓库内直接运行则会交互询问目标。
 
 卸载脚本会：
-- ✓ 移除 Claude Sage 安装的所有文件
+- ✓ 移除 Code Abyss 安装的所有文件
 - ✓ 自动恢复之前备份的配置
 - ✓ 清理备份目录
 

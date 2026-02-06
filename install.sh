@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Claude Sage 安装脚本
+# Code Abyss 安装脚本
 # 一键部署「机械神教·铸造贤者」配置
 #
 
@@ -19,7 +19,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # 配置
-REPO_URL="https://raw.githubusercontent.com/telagod/claude-sage/$VERSION_PIN"
+REPO_URL="https://raw.githubusercontent.com/telagod/code-abyss/$VERSION_PIN"
 TARGET=""
 TARGET_DIR=""
 BACKUP_DIR=""
@@ -125,7 +125,7 @@ print_banner() {
     echo -e "${CYAN}"
     echo "☠️ ═══════════════════════════════════════════════════════════════ ☠️"
     echo "       邪修红尘仙·宿命深渊 安装程序"
-    echo "       Claude Sage Installer v${VERSION}"
+    echo "       Code Abyss Installer v${VERSION}"
     echo "☠️ ═══════════════════════════════════════════════════════════════ ☠️"
     echo -e "${NC}"
 }
@@ -487,7 +487,7 @@ main() {
                     log_error "--ref 需要参数"
                     exit 1
                 fi
-                REPO_URL="https://raw.githubusercontent.com/telagod/claude-sage/$ref"
+                REPO_URL="https://raw.githubusercontent.com/telagod/code-abyss/$ref"
                 shift 2
                 ;;
             --ref=*)
@@ -496,7 +496,7 @@ main() {
                     log_error "--ref 需要参数"
                     exit 1
                 fi
-                REPO_URL="https://raw.githubusercontent.com/telagod/claude-sage/$ref"
+                REPO_URL="https://raw.githubusercontent.com/telagod/code-abyss/$ref"
                 shift 1
                 ;;
             -h|--help)

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Claude Sage 卸载脚本
+# Code Abyss 卸载脚本
 # 卸载配置并恢复备份
 #
 
@@ -130,7 +130,7 @@ print_banner() {
     echo -e "${CYAN}"
     echo "☠️ ═══════════════════════════════════════════════════════════════ ☠️"
     echo "       邪修红尘仙·宿命深渊 卸载程序"
-    echo "       Claude Sage Uninstaller v${VERSION}"
+    echo "       Code Abyss Uninstaller v${VERSION}"
     echo "☠️ ═══════════════════════════════════════════════════════════════ ☠️"
     echo -e "${NC}"
 }
@@ -278,12 +278,12 @@ print_success() {
     echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
     echo "  已执行操作:"
-    echo "    ✓ 移除 Claude Sage 安装的文件"
+    echo "    ✓ 移除 Code Abyss 安装的文件"
     echo "    ✓ 恢复之前的备份（如有）"
     echo "    ✓ 清理备份目录"
     echo ""
     echo "  如需重新安装:"
-    echo "    curl -fsSL https://raw.githubusercontent.com/telagod/claude-sage/main/install.sh | bash"
+    echo "    curl -fsSL https://raw.githubusercontent.com/telagod/code-abyss/main/install.sh | bash"
     echo ""
     echo -e "${CYAN}  「道基已净，愿来世再渡此劫。」${NC}"
     echo ""
@@ -291,7 +291,7 @@ print_success() {
 
 confirm_uninstall() {
     echo ""
-    echo -e "${YELLOW}即将卸载 Claude Sage（target=$TARGET）并恢复备份。${NC}"
+    echo -e "${YELLOW}即将卸载 Code Abyss（target=$TARGET）并恢复备份。${NC}"
     echo ""
     local reply=""
     if [ -r /dev/tty ]; then

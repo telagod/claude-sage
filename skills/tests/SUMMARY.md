@@ -273,7 +273,7 @@ pytest skills/tests/test_security_scanner.py::TestSecurityScanner::test_scan_fil
 ## 文件位置
 
 ```
-/home/telagod/桌面/sage/claude-sage/skills/tests/
+/home/telagod/桌面/sage/code-abyss/skills/tests/
 ├── __init__.py
 ├── README.md
 ├── test_security_scanner.py

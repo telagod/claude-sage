@@ -1,5 +1,5 @@
 #
-# Claude Sage 卸载脚本 (Windows PowerShell)
+# Code Abyss 卸载脚本 (Windows PowerShell)
 # 卸载配置并恢复备份
 #
 
@@ -132,7 +132,7 @@ function Write-Banner {
     Write-Host ""
     Write-Host "☠️ ═══════════════════════════════════════════════════════════════ ☠️" -ForegroundColor Cyan
     Write-Host "       邪修红尘仙·宿命深渊 卸载程序" -ForegroundColor Cyan
-    Write-Host "       Claude Sage Uninstaller v$Version" -ForegroundColor Cyan
+    Write-Host "       Code Abyss Uninstaller v$Version" -ForegroundColor Cyan
     Write-Host "☠️ ═══════════════════════════════════════════════════════════════ ☠️" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -159,7 +159,7 @@ function Write-Error {
 
 function Confirm-Uninstall {
     Write-Host ""
-    Write-Host "即将卸载 Claude Sage（Target=$Target）并恢复备份。" -ForegroundColor Yellow
+    Write-Host "即将卸载 Code Abyss（Target=$Target）并恢复备份。" -ForegroundColor Yellow
     Write-Host ""
     $confirm = Read-Host "确认卸载？[y/N]"
 
@@ -319,12 +319,12 @@ function Write-SuccessBanner {
     Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
     Write-Host ""
     Write-Host "  已执行操作:"
-    Write-Host "    ✓ 移除 Claude Sage 安装的文件"
+    Write-Host "    ✓ 移除 Code Abyss 安装的文件"
     Write-Host "    ✓ 恢复之前的备份（如有）"
     Write-Host "    ✓ 清理备份目录"
     Write-Host ""
     Write-Host "  如需重新安装:"
-    Write-Host "    irm https://raw.githubusercontent.com/telagod/claude-sage/main/install.ps1 | iex"
+    Write-Host "    irm https://raw.githubusercontent.com/telagod/code-abyss/main/install.ps1 | iex"
     Write-Host ""
     Write-Host "  「道基已净，愿来世再渡此劫。」" -ForegroundColor Cyan
     Write-Host ""
