@@ -17,8 +17,9 @@ disable-model-invocation: false
 | ⚔️ **攻防秘典** | 渗透测试、红队、蓝队、威胁情报 | [攻防秘典](#攻防秘典) |
 | 📜 **符箓秘典** | Python、Go、Rust、TypeScript、Java | [符箓秘典](#符箓秘典) |
 | 🏗️ **阵法秘典** | API 设计、安全架构、云原生 | [阵法秘典](#阵法秘典) |
-| 🔧 **炼器秘典** | Git、测试、DevSecOps、数据库 | [炼器秘典](#炼器秘典) |
+| 🔧 **炼器秘典** | Git、测试、DevSecOps、数据库、性能、可观测性、成本 | [炼器秘典](#炼器秘典) |
 | 🔮 **丹鼎秘典** | Agent 开发、LLM 安全 | [丹鼎秘典](#丹鼎秘典) |
+| 🕸 **天罗秘典** | 多Agent协同、任务分解、冲突解决 | [天罗秘典](#天罗秘典) |
 
 ---
 
@@ -102,6 +103,9 @@ disable-model-invocation: false
 | `security-arch` | 安全架构、零信任、身份认证、IAM | 安全架构设计 |
 | `cloud-native` | 云原生、容器、Kubernetes、Serverless | 云原生架构 |
 | `data-security` | 数据安全、加密、隐私、合规 | 数据安全架构 |
+| `message-queue` | 消息队列、Kafka、RabbitMQ、事件驱动、CQRS | 消息队列架构 |
+| `caching` | 缓存、Redis、CDN、缓存穿透、缓存雪崩 | 缓存策略设计 |
+| `compliance` | 合规、GDPR、SOC2、审计、数据治理 | 合规审计 |
 
 ---
 
@@ -115,6 +119,9 @@ disable-model-invocation: false
 | `testing` | 测试、单元测试、pytest、Jest、TDD | 软件测试 |
 | `devsecops` | DevSecOps、CI/CD、供应链安全、合规 | 安全开发运维 |
 | `database` | 数据库、SQL、PostgreSQL、MongoDB | 数据库设计与优化 |
+| `performance` | 性能、延迟、吞吐、Profiling、火焰图 | 性能优化 |
+| `observability` | 可观测性、日志、监控、指标、追踪、SLO | 可观测性 |
+| `cost-optimization` | 成本、FinOps、预算、账单、省钱 | 成本优化 |
 
 ---
 
@@ -126,6 +133,16 @@ disable-model-invocation: false
 |------|--------|------|
 | `agent-dev` | Agent、LLM应用、RAG、Prompt工程 | AI Agent 开发 |
 | `llm-security` | LLM安全、提示注入、AI红队 | LLM 安全测试 |
+
+---
+
+## 天罗秘典
+
+**天罗化身·多Agent协同**
+
+| 秘典 | 触发词 | 说明 |
+|------|--------|------|
+| `multi-agent` | TeamCreate、多Agent、并行、协同、分工 | 多Agent协同规范 |
 
 ---
 

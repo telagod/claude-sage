@@ -15,6 +15,9 @@ description: 架构设计能力索引。API设计、安全架构、云原生、�
 | [security-arch](security-arch.md) | 安全架构 | 零信任、IAM、威胁建模 |
 | [cloud-native](cloud-native.md) | 云原生 | 容器、K8s、Serverless |
 | [data-security](data-security.md) | 数据安全 | 加密、隐私、合规 |
+| [message-queue](message-queue.md) | 消息队列 | Kafka、RabbitMQ、事件驱动 |
+| [caching](caching.md) | 缓存策略 | Redis、CDN、缓存一致性 |
+| [compliance](compliance.md) | 合规审计 | GDPR、SOC2、审计日志 |
 
 ## 架构原则
 

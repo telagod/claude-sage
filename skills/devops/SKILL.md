@@ -15,6 +15,9 @@ description: DevOps 能力索引。Git、测试、DevSecOps、数据库。当用
 | [testing](testing.md) | 软件测试 | 单元测试、集成测试、TDD |
 | [devsecops](devsecops.md) | 安全开发 | CI/CD安全、供应链安全 |
 | [database](database.md) | 数据库 | SQL、NoSQL、优化 |
+| [performance](performance.md) | 性能优化 | Profiling、火焰图、基准测试 |
+| [observability](observability.md) | 可观测性 | 日志、指标、追踪、SLO |
+| [cost-optimization](cost-optimization.md) | 成本优化 | FinOps、右尺寸、Spot、伸缩 |
 
 ## DevOps 原则
 
