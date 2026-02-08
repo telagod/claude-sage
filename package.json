@@ -1,0 +1,41 @@
+{
+  "name": "code-abyss",
+  "version": "1.5.1",
+  "description": "邪修红尘仙·宿命深渊 - Claude Code CLI 个性化配置方案",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "codex",
+    "cli",
+    "ai",
+    "assistant",
+    "configuration"
+  ],
+  "author": "telagod",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/telagod/code-abyss.git"
+  },
+  "homepage": "https://github.com/telagod/code-abyss#readme",
+  "bugs": {
+    "url": "https://github.com/telagod/code-abyss/issues"
+  },
+  "bin": {
+    "code-abyss": "./bin/install.js"
+  },
+  "files": [
+    "bin/",
+    "config/",
+    "output-styles/",
+    "skills/",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "test": "echo \"No tests yet\" && exit 0"
+  }
+}

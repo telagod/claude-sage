@@ -1,0 +1,6 @@
+.git/
+.github/
+*.sh
+*.ps1
+.gitignore
+DESIGN.md

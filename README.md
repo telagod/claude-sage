@@ -34,7 +34,22 @@ Code Abyss 是一套 **CLI 助手个性化配置方案**（支持 Claude Code CL
 
 ## 🚀 快速安装
 
-### Linux / macOS
+### 方式 1：npx 一键安装（推荐）
+
+```bash
+# 安装到 Claude Code
+npx code-abyss --target claude
+
+# 安装到 Codex CLI
+npx code-abyss --target codex
+
+# 交互选择目标
+npx code-abyss
+```
+
+### 方式 2：Shell 脚本安装
+
+#### Linux / macOS
 
 ```bash
 # 安装到 Claude Code（~/.claude/）
@@ -43,14 +58,11 @@ curl -fsSL https://raw.githubusercontent.com/telagod/code-abyss/main/install.sh 
 # 安装到 Codex CLI（~/.codex/）
 curl -fsSL https://raw.githubusercontent.com/telagod/code-abyss/main/install.sh | bash -s -- --target codex
 
-# 交互选择（若无法交互则默认 claude）
-curl -fsSL https://raw.githubusercontent.com/telagod/code-abyss/main/install.sh | bash
-
-# 固定版本安装（推荐）
+# 固定版本安装
 curl -fsSL https://raw.githubusercontent.com/telagod/code-abyss/v1.5.0/install.sh | bash -s -- --target codex --ref v1.5.0
 ```
 
-### Windows (PowerShell)
+#### Windows (PowerShell)
 
 ```powershell
 # 交互选择目标（claude/codex）
@@ -58,12 +70,9 @@ irm https://raw.githubusercontent.com/telagod/code-abyss/main/install.ps1 | iex
 
 # 或显式指定目标
 & ([ScriptBlock]::Create((irm https://raw.githubusercontent.com/telagod/code-abyss/main/install.ps1))) -Target codex
-
-# 通过环境变量固定版本安装（推荐）
-$env:SAGE_REF="v1.5.0"; & ([ScriptBlock]::Create((irm https://raw.githubusercontent.com/telagod/code-abyss/v1.5.0/install.ps1))) --target codex
 ```
 
-### 手动安装
+### 方式 3：手动安装
 
 ```bash
 git clone https://github.com/telagod/code-abyss.git
@@ -139,6 +148,52 @@ Codex 的"输出风格/人格/道语标签"等均写在 `~/.codex/AGENTS.md` 中
 
 ---
 
+## ⚙️ 推荐配置
+
+安装后可参考 `config/settings.example.json` 配置 `~/.claude/settings.json`：
+
+```json
+{
+  "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",      // 启用 Agent Teams（实验性）
+  "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",  // 禁用非必要网络流量
+  "alwaysThinkingEnabled": true,                    // 启用思考模式
+  "model": "opus",                                  // 使用 Opus 模型
+  "outputStyle": "abyss-cultivator",                // 邪修风格
+  "permissions": {
+    "allow": ["Bash", "Read", "Write", "Edit", "Grep", "Glob", "WebFetch", "WebSearch"]
+  }
+}
+```
+
+**关键特性说明**：
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`: 启用多 Agent 并行协作（2026-02 新特性）
+- `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`: 一键禁用自动更新、遥测、错误报告
+- `outputStyle`: 设置为 `abyss-cultivator` 启用邪修风格
+
+完整配置示例见 [`config/settings.example.json`](config/settings.example.json)
+
+### 可选：自定义状态栏（CCometixLine）
+
+如需自定义状态栏显示，可安装 [CCometixLine](https://github.com/Haleclipse/CCometixLine)（社区项目）：
+
+```bash
+# 安装 CCometixLine
+git clone https://github.com/Haleclipse/CCometixLine.git ~/.claude/ccline
+cd ~/.claude/ccline
+npm install
+
+# 在 settings.json 中添加
+{
+  "statusLine": {
+    "command": "~/.claude/ccline/ccline",
+    "padding": 0,
+    "type": "command"
+  }
+}
+```
+
+---
+
 ## 🛠️ 内置 Skills
 
 在 Claude Code / Codex CLI 中直接调用：
@@ -210,6 +265,18 @@ python3 ~/.codex/skills/run_skill.py verify-security ./src --json
 ---
 
 ## 🗑️ 卸载
+
+### npx 安装的卸载
+
+```bash
+# 卸载 Claude Code 安装
+node ~/.claude/.sage-uninstall.js
+
+# 卸载 Codex CLI 安装
+node ~/.codex/.sage-uninstall.js
+```
+
+### Shell 脚本安装的卸载
 
 安装时会自动备份受影响的文件，卸载时自动恢复。
 
