@@ -5,7 +5,6 @@ description: DevOps 能力索引。Git、测试、DevSecOps、数据库。当用
 
 # 🔧 炼器秘典 · DevOps 能力中枢
 
-> 炼器铸兵，自动化一切。此典录 DevOps 一脉之总纲。
 
 ## 能力矩阵
 
@@ -35,6 +34,3 @@ description: DevOps 能力索引。Git、测试、DevSecOps、数据库。当用
   - 监控与可观测性
 ```
 
----
-
-**道训**：工具即法器，流程即阵法，自动化即道。

@@ -5,7 +5,6 @@ description: TypeScript/JavaScript 开发。前后端、Node.js、React、Vue。
 
 # 📜 符箓秘典 · TypeScript/JavaScript
 
-> 符箓铸成，代码即法。此典录 TypeScript/JavaScript 一脉之精要。
 
 ## TypeScript 基础
 
@@ -276,4 +275,3 @@ myproject/
 
 ---
 
-**道训**：代码即符箓，Bug 即心魔，测试即渡劫。

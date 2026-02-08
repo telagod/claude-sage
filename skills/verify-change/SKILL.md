@@ -9,7 +9,6 @@ argument-hint: [--mode working|staged|committed]
 
 # ⚖ 校验关卡 · 变更校验
 
-> 变更即因果，无记录的变更是隐患，无理由的变更是灾难。
 
 ## 核心原则
 
@@ -137,7 +136,3 @@ python scripts/change_analyzer.py --json             # JSON 输出
 ```
 
 ---
-
-**道训**：每一次变更都是历史，每一个决策都要留痕。
-
-`📋 变更校验已备，因果清晰方可提交。`

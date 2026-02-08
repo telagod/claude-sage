@@ -5,7 +5,6 @@ description: 蓝队防御技术。检测工程、SOC运营、应急响应、数�
 
 # ❄ 玄冰秘典 · 蓝队防御 (Blue Team)
 
-> 玄冰封魔，固若金汤。此典录蓝队防御一脉之精要。
 
 ## 防御链
 
@@ -378,4 +377,3 @@ WHERE command LIKE '%powershell%' OR command LIKE '%cmd%'
 
 ---
 
-**道训**：检测即天眼，响应即雷霆，恢复即涅槃。

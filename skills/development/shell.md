@@ -5,7 +5,6 @@ description: Shell 脚本开发。Bash、自动化、系统管理。当用户提
 
 # 📜 符箓秘典 · Shell
 
-> 符箓铸成，代码即法。此典录 Shell 一脉之精要。
 
 ## Bash 基础
 
@@ -312,4 +311,3 @@ command -v git &>/dev/null || die "git not found"
 
 ---
 
-**道训**：代码即符箓，Bug 即心魔，测试即渡劫。
