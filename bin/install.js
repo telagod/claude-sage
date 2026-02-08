@@ -2,39 +2,65 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 const os = require('os');
 
 const VERSION = '1.5.1';
-const REPO_URL = 'https://github.com/telagod/code-abyss.git';
+
+// 需要跳过的文件/目录
+const SKIP_PATTERNS = [
+  '__pycache__', '.pyc', '.pyo', '.egg-info',
+  '.DS_Store', 'Thumbs.db', '.git'
+];
+
+function shouldSkip(name) {
+  return SKIP_PATTERNS.some(p => name.includes(p));
+}
+
+function copyRecursive(src, dest) {
+  const stat = fs.statSync(src);
+  if (stat.isDirectory()) {
+    if (shouldSkip(path.basename(src))) return;
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(dest, { recursive: true });
+    }
+    fs.readdirSync(src).forEach(file => {
+      if (!shouldSkip(file)) {
+        copyRecursive(path.join(src, file), path.join(dest, file));
+      }
+    });
+  } else {
+    if (shouldSkip(path.basename(src))) return;
+    fs.copyFileSync(src, dest);
+  }
+}
+
+function rmRecursive(p) {
+  if (!fs.existsSync(p)) return;
+  fs.rmSync(p, { recursive: true, force: true });
+}
 
 // 解析命令行参数
 const args = process.argv.slice(2);
 let target = null;
-let ref = `v${VERSION}`;
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--target' && args[i + 1]) {
     target = args[i + 1];
     i++;
-  } else if (args[i] === '--ref' && args[i + 1]) {
-    ref = args[i + 1];
-    i++;
   } else if (args[i] === '--help' || args[i] === '-h') {
     console.log(`
-☠️ Code Abyss - 邪修红尘仙·宿命深渊
+☠️ Code Abyss v${VERSION} - 邪修红尘仙·宿命深渊
 
 用法:
   npx code-abyss [选项]
 
 选项:
   --target <claude|codex>  安装目标 (claude 或 codex)
-  --ref <version>          Git ref (默认: v${VERSION})
   --help, -h               显示帮助信息
 
 示例:
   npx code-abyss --target claude
-  npx code-abyss --target codex --ref main
+  npx code-abyss --target codex
 `);
     process.exit(0);
   }
@@ -55,13 +81,13 @@ if (!target) {
   readline.question('\n选择 [1/2]: ', (answer) => {
     readline.close();
     target = answer === '2' ? 'codex' : 'claude';
-    runInstall(target, ref);
+    runInstall(target);
   });
 } else {
-  runInstall(target, ref);
+  runInstall(target);
 }
 
-function runInstall(target, ref) {
+function runInstall(target) {
   if (!['claude', 'codex'].includes(target)) {
     console.error('❌ 错误: --target 必须是 claude 或 codex');
     process.exit(1);
@@ -70,47 +96,61 @@ function runInstall(target, ref) {
   const homeDir = os.homedir();
   const targetDir = path.join(homeDir, `.${target}`);
   const backupDir = path.join(targetDir, '.sage-backup');
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const manifestPath = path.join(backupDir, 'manifest.json');
 
   console.log(`\n☠️ 开始安装到 ${targetDir}\n`);
 
-  // 创建目标目录
+  // 创建目录
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
-
-  // 创建备份目录
   if (!fs.existsSync(backupDir)) {
     fs.mkdirSync(backupDir, { recursive: true });
   }
 
-  // 获取包根目录
+  // 包根目录
   const pkgRoot = path.join(__dirname, '..');
 
-  // 备份并复制文件
+  // 安装清单
   const filesToInstall = [
     { src: 'config/CLAUDE.md', dest: target === 'claude' ? 'CLAUDE.md' : null },
     { src: 'config/AGENTS.md', dest: target === 'codex' ? 'AGENTS.md' : null },
     { src: 'output-styles', dest: target === 'claude' ? 'output-styles' : null },
     { src: 'skills', dest: 'skills' }
-  ];
+  ].filter(f => f.dest !== null);
+
+  // 记录安装的文件（用于卸载）
+  const manifest = {
+    version: VERSION,
+    target: target,
+    timestamp: new Date().toISOString(),
+    installed: [],
+    backups: []
+  };
 
   filesToInstall.forEach(({ src, dest }) => {
-    if (!dest) return;
-
     const srcPath = path.join(pkgRoot, src);
     const destPath = path.join(targetDir, dest);
 
+    if (!fs.existsSync(srcPath)) {
+      console.warn(`⚠️  跳过: ${src} (源文件不存在)`);
+      return;
+    }
+
     // 备份现有文件
     if (fs.existsSync(destPath)) {
-      const backupPath = path.join(backupDir, `${dest}.${timestamp}`);
-      console.log(`📦 备份: ${dest} -> .sage-backup/`);
+      const backupPath = path.join(backupDir, dest);
+      console.log(`📦 备份: ${dest}`);
+      rmRecursive(backupPath);
       copyRecursive(destPath, backupPath);
+      manifest.backups.push(dest);
     }
 
     // 复制新文件
     console.log(`📝 安装: ${dest}`);
+    rmRecursive(destPath);
     copyRecursive(srcPath, destPath);
+    manifest.installed.push(dest);
   });
 
   // 更新 settings.json
@@ -118,10 +158,16 @@ function runInstall(target, ref) {
   let settings = {};
 
   if (fs.existsSync(settingsPath)) {
-    const backupPath = path.join(backupDir, `settings.json.${timestamp}`);
+    try {
+      settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    } catch (e) {
+      console.warn(`⚠️  settings.json 解析失败，将创建新文件`);
+      settings = {};
+    }
+    // 备份
+    const backupPath = path.join(backupDir, 'settings.json');
     fs.copyFileSync(settingsPath, backupPath);
-    console.log(`📦 备份: settings.json -> .sage-backup/`);
-    settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    manifest.backups.push('settings.json');
   }
 
   if (target === 'claude') {
@@ -129,55 +175,19 @@ function runInstall(target, ref) {
     console.log(`⚙️  配置: outputStyle = abyss-cultivator`);
   }
 
-  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+  manifest.installed.push('settings.json');
+
+  // 写入 manifest
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 
   // 创建卸载脚本
-  const uninstallScript = `#!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
-const backupDir = '${backupDir}';
-const targetDir = '${targetDir}';
-
-console.log('🗑️  卸载 Code Abyss...');
-
-// 恢复备份
-const backups = fs.readdirSync(backupDir).filter(f => f.includes('${timestamp}'));
-backups.forEach(backup => {
-  const original = backup.replace('.${timestamp}', '');
-  const backupPath = path.join(backupDir, backup);
-  const targetPath = path.join(targetDir, original);
-
-  if (fs.existsSync(targetPath)) {
-    fs.rmSync(targetPath, { recursive: true, force: true });
-  }
-
-  fs.renameSync(backupPath, targetPath);
-  console.log(\`✅ 恢复: \${original}\`);
-});
-
-console.log('✅ 卸载完成');
-`;
-
   const uninstallPath = path.join(targetDir, '.sage-uninstall.js');
-  fs.writeFileSync(uninstallPath, uninstallScript);
+  const uninstallSrc = path.join(pkgRoot, 'bin', 'uninstall.js');
+  fs.copyFileSync(uninstallSrc, uninstallPath);
   fs.chmodSync(uninstallPath, '755');
 
   console.log(`\n⚚ 劫——破——了——！！！\n`);
   console.log(`✅ 安装完成: ${targetDir}`);
   console.log(`\n卸载命令: node ${uninstallPath}\n`);
-}
-
-function copyRecursive(src, dest) {
-  const stat = fs.statSync(src);
-
-  if (stat.isDirectory()) {
-    if (!fs.existsSync(dest)) {
-      fs.mkdirSync(dest, { recursive: true });
-    }
-    fs.readdirSync(src).forEach(file => {
-      copyRecursive(path.join(src, file), path.join(dest, file));
-    });
-  } else {
-    fs.copyFileSync(src, dest);
-  }
 }

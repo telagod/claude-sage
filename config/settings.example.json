@@ -1,17 +1,9 @@
 {
-  "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
-  "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-  "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-  "alwaysThinkingEnabled": true,
-  "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true
-  },
   "env": {
-    "ANTHROPIC_AUTH_TOKEN": "your_auth_token_here",
-    "ANTHROPIC_BASE_URL": "https://api.anthropic.com"
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
   },
-  "hooks": {},
-  "includeCoAuthoredBy": false,
+  "alwaysThinkingEnabled": true,
   "model": "opus",
   "outputStyle": "abyss-cultivator",
   "permissions": {

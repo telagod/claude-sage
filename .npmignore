@@ -1,6 +1,6 @@
 .git/
 .github/
-*.sh
-*.ps1
 .gitignore
+.npmignore
 DESIGN.md
+TEST_REPORT.md
