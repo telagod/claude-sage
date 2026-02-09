@@ -17,14 +17,15 @@ skills/
 │   ├── architecture/ # 阵法秘典
 │   ├── devops/       # 炼器秘典
 │   ├── ai/           # 丹鼎秘典
-│   └── frontend-design/ # 美学秘典
+│   ├── frontend-design/ # 美学秘典
+│   └── orchestration/   # 协同秘典
 ├── tools/            # 工具类秘典
 │   ├── verify-module/
 │   ├── verify-security/
 │   ├── verify-change/
 │   ├── verify-quality/
 │   └── gen-docs/
-├── orchestration/    # 协同秘典
+├── orchestration/    # 协同执行引擎
 │   └── multi-agent/
 ├── tests/
 ├── run_skill.py
