@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 # 添加 skills 目录到 Python 路径
-sys.path.insert(0, str(Path(__file__).parent.parent / "verify-quality" / "scripts"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "tools" / "verify-quality" / "scripts"))
 
 from quality_checker import (
     Severity, Issue, FileMetrics, QualityResult, PythonAnalyzer,

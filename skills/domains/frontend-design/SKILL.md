@@ -13,6 +13,10 @@ user-invocable: true
 | UI美学 | [ui-aesthetics.md](ui-aesthetics.md) | 色彩理论、排版系统、间距系统、视觉层次、设计令牌、暗色模式、阴影层级 |
 | 组件模式 | [component-patterns.md](component-patterns.md) | 布局模板、响应式设计、交互模式、动画、表单设计、卡片组件、导航模式 |
 | UX原则 | [ux-principles.md](ux-principles.md) | 可用性、无障碍、信息架构、用户流程、加载体验、反馈设计、移动端优先、性能感知 |
+| 状态管理 | [state-management.md](state-management.md) | Redux、Zustand、Jotai、Recoil、Context API、性能优化 |
+| 性能优化 | [performance.md](performance.md) | 懒加载、代码分割、虚拟滚动、Web Vitals、资源优化 |
+| 前端测试 | [testing.md](testing.md) | Vitest、Playwright、单元测试、E2E测试、视觉回归 |
+| 构建工具 | [build-tools.md](build-tools.md) | Vite、Webpack、Turbopack、esbuild、构建优化 |
 
 ## 使用场景
 

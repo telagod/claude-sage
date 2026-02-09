@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 # 添加 skills 目录到 Python 路径
-sys.path.insert(0, str(Path(__file__).parent.parent / "verify-change" / "scripts"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "tools" / "verify-change" / "scripts"))
 
 from change_analyzer import (
     ChangeType, Severity, FileChange, Issue, AnalysisResult,

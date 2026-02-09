@@ -16,6 +16,10 @@ description: 开发语言能力索引。Python、Go、Rust、TypeScript、Java�
 | [java](java.md) | Java | 企业级、Spring、微服务 |
 | [cpp](cpp.md) | C/C++ | 系统底层、性能优化 |
 | [shell](shell.md) | Bash | 脚本自动化、系统管理 |
+| [php](php.md) | PHP | Laravel、Symfony、Web开发 |
+| [swift](swift.md) | Swift | SwiftUI、iOS开发、Combine |
+| [kotlin](kotlin.md) | Kotlin | Jetpack Compose、Android开发 |
+| [dart](dart.md) | Dart | Flutter、跨平台开发 |
 
 ## 语言选型指南
 

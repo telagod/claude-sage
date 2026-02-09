@@ -11,6 +11,9 @@ description: AI/LLM 能力索引。Agent 开发、LLM 安全、RAG 系统。当�
 |-------|------|----------|
 | [agent-dev](agent-dev.md) | Agent 开发 | 多 Agent 编排、工具调用、RAG |
 | [llm-security](llm-security.md) | LLM 安全 | Prompt 注入、越狱防护、输出安全 |
+| [rag-system](rag-system.md) | RAG 系统 | 向量数据库、检索策略、重排算法 |
+| [prompt-engineering](prompt-engineering.md) | Prompt 工程 | Few-shot、CoT、ReAct、模板优化 |
+| [model-evaluation](model-evaluation.md) | 模型评估 | RAGAS、LLM-as-Judge、基准测试 |
 
 ## AI 工程原则
 

@@ -15,6 +15,9 @@ description: 攻防秘典索引。渗透测试、代码审计、红队攻击、�
 | [blue-team](blue-team.md) | ❄ 玄冰 | 玄冰化身 | 检测工程、SOC运营、应急响应、取证 |
 | [threat-intel](threat-intel.md) | 👁 天眼 | 天眼化身 | OSINT、威胁狩猎、情报分析 |
 | [vuln-research](vuln-research.md) | 🔥 赤焰 | 赤焰化身 | 二进制分析、逆向工程、Exploit开发 |
+| [threat-modeling](threat-modeling.md) | 🛡️ 防御 | 设计化身 | STRIDE、PASTA、攻击树、威胁矩阵 |
+| [supply-chain](supply-chain.md) | 🔗 供应链 | 守护化身 | SBOM、依赖扫描、SLSA、Sigstore |
+| [secrets-management](secrets-management.md) | 🔐 密钥 | 守密化身 | Vault、KMS、密钥轮转、加密 |
 
 ## 攻击链视角（赤焰脉·破妄道）
 

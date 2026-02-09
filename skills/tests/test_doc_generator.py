@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 # 添加 skills 目录到 Python 路径
-sys.path.insert(0, str(Path(__file__).parent.parent / "gen-docs" / "scripts"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "tools" / "gen-docs" / "scripts"))
 
 from doc_generator import (
     ModuleInfo, detect_language, analyze_python_module, analyze_module,
