@@ -33,11 +33,11 @@ def get_script_path(skill_name: str) -> Path:
     skills_dir = get_skills_dir()
 
     script_map = {
-        "verify-module": "module_scanner.py",
-        "verify-security": "security_scanner.py",
-        "verify-change": "change_analyzer.py",
-        "verify-quality": "quality_checker.py",
-        "gen-docs": "doc_generator.py",
+        "verify-module": ("tools", "module_scanner.py"),
+        "verify-security": ("tools", "security_scanner.py"),
+        "verify-change": ("tools", "change_analyzer.py"),
+        "verify-quality": ("tools", "quality_checker.py"),
+        "gen-docs": ("tools", "doc_generator.py"),
     }
 
     if skill_name not in script_map:
@@ -46,8 +46,8 @@ def get_script_path(skill_name: str) -> Path:
         print(f"可用的 skills: {available}")
         sys.exit(1)
 
-    script_name = script_map[skill_name]
-    script_path = skills_dir / skill_name / "scripts" / script_name
+    category, script_name = script_map[skill_name]
+    script_path = skills_dir / category / skill_name / "scripts" / script_name
 
     if not script_path.exists():
         print(f"错误: 脚本不存在 {script_path}")

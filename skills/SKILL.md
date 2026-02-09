@@ -7,6 +7,30 @@ disable-model-invocation: false
 
 # 神通秘典 · 总纲
 
+## 目录结构
+
+```
+skills/
+├── domains/          # 知识域秘典
+│   ├── security/     # 攻防秘典
+│   ├── development/  # 符箓秘典（语言）
+│   ├── architecture/ # 阵法秘典
+│   ├── devops/       # 炼器秘典
+│   ├── ai/           # 丹鼎秘典
+│   └── frontend-design/ # 美学秘典
+├── tools/            # 工具类秘典
+│   ├── verify-module/
+│   ├── verify-security/
+│   ├── verify-change/
+│   ├── verify-quality/
+│   └── gen-docs/
+├── orchestration/    # 协同秘典
+│   └── multi-agent/
+├── tests/
+├── run_skill.py
+└── SKILL.md
+```
+
 ## 快速导航
 
 | 领域 | 说明 | 入口 |
@@ -17,6 +41,7 @@ disable-model-invocation: false
 | 🏗️ **阵法秘典** | API 设计、安全架构、云原生 | [阵法秘典](#阵法秘典) |
 | 🔧 **炼器秘典** | Git、测试、DevSecOps、数据库、性能、可观测性、成本 | [炼器秘典](#炼器秘典) |
 | 🔮 **丹鼎秘典** | Agent 开发、LLM 安全 | [丹鼎秘典](#丹鼎秘典) |
+| 🎨 **美学秘典** | UI美学、组件模式、UX原则 | [美学秘典](#美学秘典) |
 | 🕸 **天罗秘典** | 多Agent协同、任务分解、冲突解决 | [天罗秘典](#天罗秘典) |
 
 ---
@@ -105,6 +130,16 @@ disable-model-invocation: false
 |------|--------|------|
 | `agent-dev` | Agent、LLM应用、RAG、Prompt工程 | AI Agent 开发 |
 | `llm-security` | LLM安全、提示注入、AI红队 | LLM 安全测试 |
+
+---
+
+## 美学秘典
+
+| 秘典 | 触发词 | 说明 |
+|------|--------|------|
+| `ui-aesthetics` | UI美学、色彩、排版、间距、设计令牌、暗色模式 | UI 美学设计 |
+| `component-patterns` | 组件模式、布局、响应式、动画、表单、卡片 | 组件设计模式 |
+| `ux-principles` | UX原则、可用性、无障碍、用户流程、反馈 | UX 设计原则 |
 
 ---
 
