@@ -23,7 +23,7 @@ try {
 console.log(`\n🗑️  卸载 Code Abyss v${manifest.version}...\n`);
 
 // 1. 删除安装的文件
-manifest.installed.forEach(f => {
+(manifest.installed || []).forEach(f => {
   const p = path.join(targetDir, f);
   if (fs.existsSync(p)) {
     fs.rmSync(p, { recursive: true, force: true });
@@ -32,7 +32,7 @@ manifest.installed.forEach(f => {
 });
 
 // 2. 恢复备份
-manifest.backups.forEach(f => {
+(manifest.backups || []).forEach(f => {
   const bp = path.join(backupDir, f);
   const tp = path.join(targetDir, f);
   if (fs.existsSync(bp)) {

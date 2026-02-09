@@ -285,7 +285,7 @@ function installCore(tgt) {
 // ── Claude 后续 ──
 
 async function postClaude(ctx) {
-  const { select, checkbox, confirm, input } = require('@inquirer/prompts');
+  const { select, checkbox, confirm, input } = await import('@inquirer/prompts');
 
   step(2, 3, '认证检测');
   const auth = detectClaudeAuth(ctx.settings);
@@ -388,7 +388,7 @@ async function installCcline(ctx) {
 // ── Codex 后续 ──
 
 async function postCodex() {
-  const { select, confirm, input } = require('@inquirer/prompts');
+  const { confirm } = await import('@inquirer/prompts');
   const cfgPath = path.join(HOME, '.codex', 'config.toml');
   const exists = fs.existsSync(cfgPath);
 
@@ -437,7 +437,6 @@ async function postCodex() {
 async function main() {
   if (uninstallTarget) { runUninstall(uninstallTarget); return; }
 
-  const { select } = require('@inquirer/prompts');
   banner();
 
   if (target) {
@@ -449,6 +448,7 @@ async function main() {
     return;
   }
 
+  const { select } = await import('@inquirer/prompts');
   const action = await select({
     message: '请选择操作',
     choices: [
